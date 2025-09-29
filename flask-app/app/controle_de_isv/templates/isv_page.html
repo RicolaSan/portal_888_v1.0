@@ -1,0 +1,728 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de ISV - Portal 888{% endblock %}
+
+{% block content %}
+<article class="isv-page" role="main" aria-labelledby="page-title">
+    {% if isv_data.error %}
+    <section class="error-section" role="alert" aria-live="assertive">
+        <div class="error-message" style="color: red; text-align: center; padding: 50px; background: #ffe6e6; border: 1px solid #ff9999; border-radius: 5px; margin: 20px 0;">
+            ❌ Erro ao carregar dados: {{ isv_data.error }}
+        </div>
+    </section>
+    {% else %}
+    <section class="isv-data" aria-label="Dados dos itens sem vendas">
+        <div class="isv-table-container">
+            <header class="isv-header">
+                <h2 id="page-title">Controle de ISV</h2>
+                <form class="isv-filters" role="search" aria-label="Filtros de busca">
+                    <div class="filter-group">
+                        <label for="search-input">Buscar:</label>
+                        <input type="search" id="search-input" placeholder="Buscar..." class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label for="dias-filter">Dias sem venda:</label>
+                        <input type="number" id="dias-filter" min="0" placeholder="30" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <button onclick="clearAllFilters()" class="btn btn-outline" aria-label="Limpar todos os filtros">
+                           Limpar Filtros
+                        </button>
+                        <button onclick="printFilteredData()" class="btn btn-secondary" aria-label="Imprimir dados filtrados">
+                            Imprimir
+                        </button>
+                    </div>
+                </form>
+            </header>
+            
+
+            
+            <table id="isv-table" class="display" role="table" aria-label="Tabela de itens sem vendas">
+                <thead>
+                    <tr>
+                        <th scope="col">Código</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col">Embalagem</th>
+                        <th scope="col">Fornecedor</th>
+                        <th scope="col">Estoque EMB1</th>
+                        <th scope="col">Estoque EMB9</th>
+                        <th scope="col">Dias S/VND</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in isv_data.data %}
+                    <tr>
+                        <td>{{ item.CODIGO }}</td>
+                        <td>{{ item.DESCRICAO }}</td>
+                        <td>{{ item.EMBALAGEM }}</td>
+                        <td>{{ item.FORNECEDOR }}</td>
+                        <td>{{ item['ESTOQUE EMB1'] }}</td>
+                        <td>{{ item['ESTOQUE EMB9'] }}</td>
+                        <td>{{ item['DIAS S/VND'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</article>
+
+<script>
+// JavaScript específico para a página ISV
+$(document).ready(function() {
+    // Inicializar DataTable
+    var table = $('#isv-table').DataTable({
+        "pageLength": 25,
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Portuguese-Brasil.json"
+        },
+        "ordering": false,
+        "dom": 'rtip' // Remove a caixa de busca padrão e o seletor de length
+    });
+
+    // Implementar filtro de busca personalizado
+    $('#search-input').on('keyup', function() {
+        table.search(this.value).draw();
+    });
+
+    // Implementar filtro de dias sem venda
+    $('#dias-filter').on('input change', function() {
+        var diasValue = parseInt(this.value);
+        
+        if (isNaN(diasValue) || diasValue < 0) {
+            // Remover filtro
+            $.fn.dataTable.ext.search.pop();
+        } else {
+            // Adicionar filtro
+            $.fn.dataTable.ext.search.push(
+                function(settings, data, dataIndex) {
+                    if (settings.nTable.id !== 'isv-table') {
+                        return true;
+                    }
+                    var dias = parseInt(data[3]) || 0;
+                    return dias >= diasValue;
+                }
+            );
+        }
+        
+        table.draw();
+    });
+});
+
+// Função para limpar o filtro de dias
+function clearDiasFilter() {
+    document.getElementById('dias-filter').value = '';
+    $('#dias-filter').trigger('change');
+}
+
+// Função para limpar todos os filtros
+function clearAllFilters() {
+    // Limpar campo de busca
+    document.getElementById('search-input').value = '';
+    
+    // Limpar filtro de dias
+    document.getElementById('dias-filter').value = '';
+    
+    // Obter a instância da DataTable
+    var table = $('#isv-table').DataTable();
+    
+    // Remover todos os filtros personalizados
+    $.fn.dataTable.ext.search = [];
+    
+    // Limpar busca da DataTable
+    table.search('').draw();
+    
+    // Mostrar mensagem de confirmação
+    // Opcional: você pode remover esta linha se não quiser a mensagem
+    alert('Todos os filtros foram limpos!');
+}
+
+// Função para imprimir apenas os dados filtrados
+function printFilteredData() {
+    // Obter a instância da DataTable
+    var table = $('#isv-table').DataTable();
+    
+    // Obter apenas as linhas visíveis (filtradas)
+    var filteredData = table.rows({ search: 'applied' }).data().toArray();
+    
+    if (filteredData.length === 0) {
+        alert('Nenhum dado para imprimir. Verifique os filtros aplicados.');
+        return;
+    }
+    
+    // Criar o conteúdo HTML para impressão
+    var printContent = `
+        <html>
+        <head>
+            <title>Relatório de Controle de ISV</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 20px;
+                    color: #333;
+                }
+                h1 { 
+                    text-align: center; 
+                    color: #33A621;
+                    margin-bottom: 30px;
+                    font-size: 24px;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 20px;
+                }
+                th, td { 
+                    border: 1px solid #ddd; 
+                    padding: 8px; 
+                    text-align: left;
+                    font-size: 12px;
+                }
+                th { 
+                    background-color: #f8f9fa; 
+                    font-weight: bold;
+                    color: #333;
+                }
+                tr:nth-child(even) { 
+                    background-color: #f9f9f9; 
+                }
+                .print-info {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    font-size: 14px;
+                    color: #666;
+                }
+                @media print {
+                    body { margin: 0; }
+                    .no-print { display: none; }
+                    @page {
+                        margin: 10mm;
+                        size: A4 landscape;
+                        orientation: landscape;
+                    }
+                    @page :first {
+                        margin-top: 10mm;
+                    }
+                    @page :left {
+                        margin-left: 10mm;
+                    }
+                    @page :right {
+                        margin-right: 10mm;
+                    }
+                    /* Remove rodapés e cabeçalhos do navegador */
+                    html, body {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    /* Otimização para paisagem */
+                    table {
+                        width: 100%;
+                        font-size: 10px;
+                    }
+                    th, td {
+                        padding: 4px;
+                        font-size: 10px;
+                    }
+                    h1 {
+                        font-size: 20px;
+                        margin-bottom: 15px;
+                    }
+                    .print-info {
+                        font-size: 12px;
+                        margin-bottom: 10px;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Controle de ISV - Itens Sem Vendas</h1>
+            <div class="print-info">
+                <p>Data de impressão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+                <p>Total de itens: ${filteredData.length}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descrição</th>
+                        <th>Complemento</th>
+                        <th>Fornecedor</th>
+                        <th>Estoque EMB1</th>
+                        <th>Estoque EMB9</th>
+                        <th>Dias S/VND</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    
+    // Adicionar os dados filtrados
+    filteredData.forEach(function(row) {
+        printContent += `
+                    <tr>
+                        <td>${row[0] || ''}</td>
+                        <td>${row[1] || ''}</td>
+                        <td>${row[2] || ''}</td>
+                        <td>${row[3] || ''}</td>
+                        <td>${row[4] || ''}</td>
+                        <td>${row[5] || ''}</td>
+                        <td>${row[6] || ''}</td>
+                    </tr>`;
+    });
+    
+    printContent += `
+                </tbody>
+            </table>
+        </body>
+        </html>`;
+    
+    // Abrir nova janela para impressão
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Aguardar o carregamento e imprimir
+    printWindow.onload = function() {
+        printWindow.print();
+        printWindow.close();
+    };
+}
+</script>
+
+<style>
+/* Variáveis de cores baseadas na paleta cores.css */
+:root {
+    --primary-green: #33A621;    /* Verde principal */
+    --accent-orange: #D9961A;    /* Laranja de destaque */
+    --light-beige: #F2EFEB;      /* Bege claro */
+    --dark-brown: #BF4417;       /* Marrom escuro */
+    --white: #ffffff;
+    --light-gray: #f8f9fa;
+    --medium-gray: #6c757d;
+    --dark-gray: #333333;
+    --border-color: #e0e0e0;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+}
+
+.isv-page {
+    padding: 0;
+    width: 100%;
+    margin: 0;
+    background: linear-gradient(135deg, var(--light-beige) 0%, rgba(255, 255, 255, 0.9) 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    z-index: 1;
+}
+
+.isv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    border-radius: 5px;
+    box-shadow: 0 4px 15px rgba(51, 166, 33, 0.2);
+    color: var(--white);
+    gap: 1rem;
+}
+
+.isv-header h2 {
+    margin: 0;
+    color: var(--white);
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.isv-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-orange), #c8851a);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #c8851a, var(--accent-orange));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 150, 26, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--medium-gray), #5a6268);
+    color: var(--white);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268, var(--medium-gray));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-outline {
+    background: var(--white);
+    color: var(--primary-green);
+    border: 2px solid var(--primary-green);
+}
+
+.btn-outline:hover {
+    background: var(--primary-green);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(51, 166, 33, 0.3);
+}
+
+.isv-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    position: relative;
+    flex: none;
+    min-width: auto;
+}
+
+/* Removido - não é mais necessário para o novo layout */
+
+.filter-group label {
+    font-weight: 600;
+    color: var(--white);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    margin-right: 0.3rem;
+}
+
+.form-control {
+    padding: 0.25rem 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    transition: all 0.3s ease;
+    background: var(--white);
+    flex: none;
+    min-width: 100px;
+    height: 28px;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(51, 166, 33, 0.1);
+}
+
+/* CSS específico para o input dias-filter */
+#dias-filter {
+    max-width: 70px;
+    min-width: 60px;
+    flex: none;
+}
+
+/* CSS específico para diminuir o input search-input */
+#search-input {
+    max-width: 160px;
+    min-width: 120px;
+    flex: none;
+}
+
+/* CSS específico para os botões no filter-group */
+.filter-group .btn {
+    align-self: center;
+    margin: 0;
+    white-space: nowrap;
+    min-width: 60px;
+    max-width: 80px;
+    padding: 0.2rem 0.3rem;
+    font-size: 0.7rem;
+    text-align: center;
+    justify-content: center;
+    height: 28px;
+}
+
+/* CSS específico para organizar múltiplos botões no filter-group */
+.filter-group:last-child {
+    margin-left: auto;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Espaçamento entre botões quando há múltiplos */
+.filter-group .btn + .btn {
+    margin-left: 0.5rem;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .isv-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+        padding: 1rem;
+    }
+    
+    .isv-filters {
+        flex-direction: column;
+        gap: 0.75rem;
+        min-width: auto;
+        justify-content: center;
+    }
+    
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.3rem;
+        min-width: 100%;
+    }
+    
+    .filter-group label {
+        margin-right: 0;
+        margin-bottom: 0.1rem;
+        font-size: 0.8rem;
+        color: var(--white);
+        text-align: left;
+    }
+    
+    .form-control {
+        min-width: 100%;
+        width: 100%;
+        height: 40px;
+        padding: 0.3rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    #search-input, #dias-filter {
+        max-width: none;
+        min-width: auto;
+    }
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    background: var(--accent-orange);
+    color: var(--white);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+    min-width: 80px;
+}
+
+.btn-sm:hover {
+    background: #c8851a;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(217, 150, 26, 0.3);
+}
+
+.btn-sm:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(217, 150, 26, 0.3);
+}
+
+
+
+.isv-table-container {
+    background: var(--white);
+    padding: 18px;
+    border-radius: 5px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+#isv-table {
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+#isv-table thead th {
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    color: var(--white);
+    padding: 8px;
+    text-align: left;
+    font-weight: 600;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+#isv-table tbody td {
+    padding: 4px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--dark-gray);
+    vertical-align: middle;
+}
+
+#isv-table tbody tr:nth-child(even) {
+    background-color: rgba(242, 239, 235, 0.3);
+}
+
+#isv-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(51, 166, 33, 0.08), rgba(217, 150, 26, 0.08));
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.error-message {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    border: 2px solid #f8bbd9;
+    border-radius: 5px;
+    color: var(--dark-brown);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Estilos para DataTables */
+.dataTables_wrapper .dataTables_length {
+    font-size: 0.85rem !important;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 5px !important;
+    padding: 0.25rem 0.4rem !important;
+    font-size: 0.85rem !important;
+    min-width: 60px !important;
+    width: auto !important;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border: 2px solid var(--border-color) !important;
+    border-radius: 5px !important;
+    padding: 0.5rem !important;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: var(--primary-green) !important;
+    box-shadow: 0 0 0 3px rgba(51, 166, 33, 0.1) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: var(--white) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--dark-brown) !important;
+    border-radius: 5px !important;
+    margin: 0 2px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--primary-green) !important;
+    color: var(--white) !important;
+    border-color: var(--primary-green) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--accent-orange) !important;
+    color: var(--white) !important;
+    border-color: var(--accent-orange) !important;
+}
+
+@media (max-width: 768px) {
+    .isv-page {
+        padding: 1rem;
+    }
+    
+    .isv-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+        padding: 1rem;
+    }
+    
+    .isv-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .isv-actions {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+        min-width: 120px;
+    }
+    
+    .isv-filters {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+
+    
+    .isv-table-container {
+        padding: 14px;
+        overflow-x: auto;
+    }
+    
+    #isv-table {
+        font-size: 0.85rem;
+    }
+    
+    #isv-table thead th,
+    #isv-table tbody td {
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .isv-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+    }
+    
+
+}
+</style>
+{% endblock %}

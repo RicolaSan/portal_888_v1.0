@@ -1,0 +1,843 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de Vencimento - Portal 888{% endblock %}
+
+{% block content %}
+<article class="vencimento-page" role="main" aria-labelledby="page-title">
+    <section class="vencimento-data" aria-label="Dados dos produtos com vencimento">
+        <div class="vencimento-table-container">
+            <header class="vencimento-header">
+                <h2 id="page-title">Controle de Vencimento</h2>
+                <form class="vencimento-filters" role="search" aria-label="Filtros de busca" method="POST">
+                    <div class="filter-group">
+                        <label for="filtro">Buscar:</label>
+                        <input type="text" id="filtro" name="filtro" value="{{ filtro }}" placeholder="Buscar..." class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <label for="dias_vencimento">Vencimentos até (dias)</label>
+                        <input type="number" id="dias_vencimento" name="dias_vencimento" value="{{ dias_vencimento }}" min="0" placeholder="30" class="form-control">
+                    </div>
+                    <div class="filter-group">
+                        <button type="submit" class="btn btn-filter" aria-label="Aplicar filtros">
+                            Filtrar
+                        </button>
+                        <a href="{{ url_for('controle_vencimento.home') }}" class="btn btn-clear" aria-label="Limpar todos os filtros">
+                            Limpar
+                        </a>
+                        <a href="{{ url_for('controle_vencimento.exportar', filtro=filtro, dias_vencimento=dias_vencimento) }}" class="btn btn-secondary" aria-label="Exportar dados para CSV">
+                            Exportar CSV
+                        </a>
+                        <a href="#" onclick="imprimirFiltrado()" class="btn btn-secondary" aria-label="Imprimir dados filtrados">
+                            Imprimir
+                        </a>
+                    </div>
+                </form>
+            </header>
+            
+
+            
+            <div class="table-wrapper" role="table" aria-label="Tabela de produtos com vencimento">
+                {{ vencimento|safe }}
+            </div>
+            
+            <!-- Paginação -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Navegação de páginas" class="pagination-nav">
+                <ul class="pagination">
+                    {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('controle_vencimento.home', page=page-1, filtro=filtro, dias_vencimento=dias_vencimento) }}">Anterior</a>
+                        </li>
+                    {% endif %}
+
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ p }}</span>
+                            </li>
+                        {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('controle_vencimento.home', page=p, filtro=filtro, dias_vencimento=dias_vencimento) }}">{{ p }}</a>
+                            </li>
+                        {% elif p == 4 and page > 6 %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% elif p == total_pages - 3 and page < total_pages - 5 %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('controle_vencimento.home', page=page+1, filtro=filtro, dias_vencimento=dias_vencimento) }}">Próximo</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</article>
+
+<style>
+/* Variáveis de cores baseadas na paleta cores.css */
+:root {
+    --primary-green: #33A621;    /* Verde principal */
+    --accent-orange: #D9961A;    /* Laranja de destaque */
+    --light-beige: #F2EFEB;      /* Bege claro */
+    --dark-brown: #BF4417;       /* Marrom escuro */
+    --white: #ffffff;
+    --light-gray: #f8f9fa;
+    --medium-gray: #6c757d;
+    --dark-gray: #333333;
+    --border-color: #e0e0e0;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+}
+
+.vencimento-page {
+    padding: 0;
+    width: 100%;
+    margin: 0;
+    background: linear-gradient(135deg, var(--light-beige) 0%, rgba(255, 255, 255, 0.9) 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    z-index: 1;
+}
+
+.vencimento-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    border-radius: 5px;
+    box-shadow: 0 4px 15px rgba(51, 166, 33, 0.2);
+    color: var(--white);
+    gap: 1rem;
+}
+
+.vencimento-header h2 {
+    margin: 0;
+    color: var(--white);
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
+
+.btn {
+    padding: 0.2rem 0.3rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 60px;
+    max-width: 80px;
+    height: 28px;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-orange), #c8851a);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #c8851a, var(--accent-orange));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 150, 26, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--medium-gray), #5a6268);
+    color: var(--white);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268, var(--medium-gray));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-outline {
+    background: var(--white);
+    color: var(--primary-green);
+    border: 2px solid var(--primary-green);
+}
+
+.btn-outline:hover {
+    background: var(--primary-green);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(51, 166, 33, 0.3);
+}
+
+/* Novo estilo para o botão Filtrar */
+.btn-filter {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: var(--white);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-filter:hover {
+    background: linear-gradient(135deg, #20c997, #28a745);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.btn-filter:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-filter::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-filter:hover::before {
+    left: 100%;
+}
+
+/* Novo estilo para o botão Limpar */
+.btn-clear {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
+    color: var(--white);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-clear:hover {
+    background: linear-gradient(135deg, #e74c3c, #dc3545);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn-clear:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-clear::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-clear:hover::before {
+    left: 100%;
+}
+
+/* Container principal para organizar filtros e ações - Design compacto */
+.controls-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.vencimento-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+/* Ações de filtro (Filtrar e Limpar) - Compacto */
+.filter-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-left: 0.5rem;
+}
+
+/* Ações de exportação (CSV e Imprimir) - Compacto */
+.export-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    position: relative;
+    flex: none;
+    min-width: auto;
+}
+
+/* CSS específico para centralizar o filter-group do buscar */
+.filter-group:first-child {
+    justify-content: flex-start !important;
+    text-align: left;
+    align-items: center !important;
+}
+
+.filter-group:first-child label {
+    text-align: left;
+}
+
+.filter-group:first-child .form-control {
+    text-align: left;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: var(--white);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    margin-right: 0.3rem;
+    flex-shrink: 0;
+}
+
+.form-control {
+    padding: 0.25rem 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    transition: all 0.3s ease;
+    background: var(--white);
+    flex: none;
+    min-width: 100px;
+    height: 28px;
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(51, 166, 33, 0.1);
+}
+
+/* CSS específico para o input dias_vencimento */
+#dias_vencimento {
+    max-width: 120px;
+    min-width: 90px;
+    flex: none;
+    text-align: center;
+    /* Garantir que o input seja funcional */
+    pointer-events: auto;
+    user-select: auto;
+    -webkit-user-select: auto;
+    -moz-user-select: auto;
+    -ms-user-select: auto;
+}
+
+/* Garantir que o input number funcione corretamente */
+input[type="number"] {
+    -moz-appearance: textfield;
+    /* Garantir funcionalidade */
+    pointer-events: auto;
+    user-select: auto;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* CSS específico para o input filtro */
+#filtro {
+    max-width: 160px;
+    min-width: 120px;
+    flex: none;
+}
+
+/* CSS específico para o input dias_vencimento - mais compacto */
+#dias_vencimento {
+    max-width: 70px;
+    min-width: 60px;
+    flex: none;
+    text-align: center;
+    /* Garantir que o input seja funcional */
+    pointer-events: auto;
+    user-select: auto;
+    -webkit-user-select: auto;
+    -moz-user-select: auto;
+    -ms-user-select: auto;
+}
+
+/* Padronização de todos os botões - Tamanho uniforme e compacto */
+.controls-container .btn,
+.filter-actions .btn,
+.export-actions .btn {
+    align-self: center;
+    margin: 0;
+    white-space: nowrap;
+    min-width: 60px;
+    max-width: 80px;
+    padding: 0.2rem 0.3rem;
+    font-size: 0.7rem;
+    text-align: center;
+    justify-content: center;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Estilos para ícones nos botões - Compacto */
+.controls-container .btn i,
+.filter-actions .btn i,
+.export-actions .btn i {
+    font-size: 0.75rem;
+    margin-right: 0.3rem;
+    flex-shrink: 0;
+}
+
+.controls-container .btn span,
+.filter-actions .btn span,
+.export-actions .btn span {
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+/* Efeitos especiais para botões filtrar e limpar */
+.btn-filter,
+.btn-clear {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.btn-filter:hover,
+.btn-clear:hover {
+    transform: translateY(-3px) scale(1.02);
+}
+
+.btn-filter:active,
+.btn-clear:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* Espaçamento entre botões nas ações */
+.filter-actions .btn + .btn,
+.export-actions .btn + .btn {
+    margin-left: 0.5rem;
+}
+
+.filters-applied {
+    background: var(--light-gray);
+    padding: 0.5rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: var(--medium-gray);
+    font-style: italic;
+}
+
+.vencimento-table-container {
+    background: var(--white);
+    padding: 18px;
+    border-radius: 5px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+.table-wrapper table,
+.styled-table {
+    width: 100% !important;
+    border-collapse: collapse;
+    display: table !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    table-layout: fixed;
+    min-width: 900px;
+    font-size: 13px;
+}
+
+.table-wrapper table thead th,
+.styled-table thead th {
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    color: var(--white);
+    padding: 8px;
+    text-align: left;
+    font-weight: 600;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table-wrapper table tbody td,
+.styled-table tbody td {
+    padding: 4px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--dark-gray);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
+}
+
+/* Larguras específicas para cada coluna */
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1) { width: 6%; white-space: nowrap; } /* CODIGO */
+.styled-table th:nth-child(2),
+.styled-table td:nth-child(2) { width: 20%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* DESCRICAO */
+.styled-table th:nth-child(3),
+.styled-table td:nth-child(3) { width: 9%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* embalagem*/
+.styled-table th:nth-child(4),
+.styled-table td:nth-child(4) { width: 18%; white-space: nowrap; } /* fornecedor */
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5) { width: 6%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* estoq.emb1 */
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6) { width: 6%; white-space: nowrap; } /* ESTOQ.EMB9 */
+.styled-table th:nth-child(7),
+.styled-table td:nth-child(7) { width: 8%; white-space: nowrap; } /* valor a vencer */
+.styled-table th:nth-child(8),
+.styled-table td:nth-child(8) { width: 7%; white-space: nowrap; } /* VENCIMENTO */
+.styled-table th:nth-child(9),
+.styled-table td:nth-child(9) { width: 9%; white-space: nowrap; } /* nao sei */
+
+.table-wrapper table tbody tr:nth-child(even),
+.styled-table tbody tr:nth-child(even) {
+    background-color: rgba(242, 239, 235, 0.3);
+}
+
+.table-wrapper table tbody tr:hover,
+.styled-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(51, 166, 33, 0.08), rgba(217, 150, 26, 0.08));
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.pagination-nav {
+    margin-top: 2rem;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 0.25rem;
+}
+
+.page-item {
+    display: inline-block;
+}
+
+.page-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    margin-left: -1px;
+    line-height: 1.25;
+    color: var(--dark-brown);
+    text-decoration: none;
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    z-index: 2;
+    color: var(--white);
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.page-item.active .page-link {
+    z-index: 3;
+    color: var(--white);
+    background-color: var(--accent-orange);
+    border-color: var(--accent-orange);
+}
+
+.page-item.disabled .page-link {
+    color: var(--medium-gray);
+    pointer-events: none;
+    cursor: auto;
+    background-color: var(--light-gray);
+    border-color: var(--border-color);
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .controls-container {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+        padding: 0.75rem;
+    }
+    
+    .vencimento-filters {
+        flex-direction: column;
+        gap: 0.75rem;
+        min-width: auto;
+        justify-content: center;
+    }
+    
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.3rem;
+        min-width: 100%;
+    }
+    
+    .filter-group label {
+        margin-right: 0;
+        margin-bottom: 0.1rem;
+        font-size: 0.8rem;
+        color: var(--white);
+        text-align: left;
+    }
+    
+    .form-control {
+        min-width: 100%;
+        width: 100%;
+        height: 40px;
+        padding: 0.3rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    #dias_vencimento {
+        max-width: 100%;
+        min-width: 100%;
+    }
+    
+    #filtro {
+        max-width: 100%;
+        min-width: 100%;
+    }
+    
+    .filter-actions {
+        margin-left: 0;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .export-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .controls-container .btn,
+    .filter-actions .btn,
+    .export-actions .btn {
+        min-width: 70px;
+        max-width: 90px;
+        height: 32px;
+        font-size: 0.7rem;
+        padding: 0.25rem 0.4rem;
+    }
+    
+    .vencimento-page {
+        padding: 1rem;
+    }
+    
+    .vencimento-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+        padding: 1rem;
+    }
+    
+    .vencimento-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+        min-width: 80px;
+        max-width: 100px;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+        height: 32px;
+    }
+    
+    /* Responsividade para botões filtrar e limpar */
+    .btn-filter,
+    .btn-clear {
+        min-width: 80px;
+        max-width: 100px;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.3px;
+        height: 32px;
+    }
+    
+    .filter-group .btn {
+        min-width: 100%;
+        margin-top: 0.25rem;
+    }
+    
+    .filter-group .btn i {
+        font-size: 0.8rem;
+        margin-right: 0.3rem;
+    }
+    
+    .vencimento-table-container {
+        padding: 8px;
+        overflow-x: auto;
+        margin: 0 -1rem;
+    }
+    
+    .table-wrapper table,
+    .styled-table {
+        font-size: 0.7rem;
+        min-width: 900px;
+    }
+    
+    .table-wrapper table thead th,
+            .styled-table thead th {
+                padding: 8px;
+            }
+
+            .table-wrapper table tbody td,
+            .styled-table tbody td {
+                padding: 4px;
+            }
+    
+    /* Ajustar larguras para mobile */
+    .styled-table th:nth-child(2),
+    .styled-table td:nth-child(2) { width: 20%; } /* DESCRICAO */
+    .styled-table th:nth-child(3),
+    .styled-table td:nth-child(3) { width: 12%; } /* COMPLEMENTO */
+    .styled-table th:nth-child(4),
+    .styled-table td:nth-child(4) { width: 10%; } /* EMBALAGEM */
+    .styled-table th:nth-child(5),
+    .styled-table td:nth-child(5) { width: 16%; } /* FORNECEDOR */
+}
+
+@media (max-width: 480px) {
+    .vencimento-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .btn {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.7rem;
+        min-width: 60px;
+        max-width: 80px;
+        height: 30px;
+    }
+}
+</style>
+
+<script>
+function imprimirFiltrado() {
+    // Capturar os valores dos filtros atuais
+    const filtro = document.querySelector('input[name="filtro"]').value || '';
+    const diasVencimento = document.querySelector('input[name="dias_vencimento"]').value || '';
+    
+    // Construir a URL com os parâmetros
+    let url = '{{ url_for("controle_vencimento.imprimir") }}';
+    const params = new URLSearchParams();
+    
+    if (filtro) {
+        params.append('filtro', filtro);
+    }
+    
+    if (diasVencimento) {
+        params.append('dias_vencimento', diasVencimento);
+    }
+    
+    if (params.toString()) {
+        url += '?' + params.toString();
+    }
+    
+    // Abrir em nova aba
+    window.open(url, '_blank');
+}
+
+// Garantir que o input dias_vencimento funcione corretamente
+document.addEventListener('DOMContentLoaded', function() {
+    const diasInput = document.getElementById('dias_vencimento');
+    const form = document.querySelector('.vencimento-filters');
+    
+    if (diasInput) {
+        // Permitir apenas números
+        diasInput.addEventListener('input', function(e) {
+            let value = e.target.value;
+            // Remover caracteres não numéricos
+            value = value.replace(/[^0-9]/g, '');
+            e.target.value = value;
+        });
+        
+        // Validar no submit
+        form.addEventListener('submit', function(e) {
+            const diasValue = diasInput.value.trim();
+            
+            if (diasValue && (isNaN(diasValue) || parseInt(diasValue) < 0)) {
+                e.preventDefault();
+                alert('Por favor, insira um número válido para os dias de vencimento.');
+                diasInput.focus();
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

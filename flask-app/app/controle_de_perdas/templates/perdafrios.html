@@ -1,0 +1,885 @@
+{% extends "base.html" %}
+
+{% block title %}Perdas Frios - Controle de Perdas{% endblock %}
+
+{% block content %}
+<article class="perdafrios-page" role="main" aria-labelledby="page-title">
+    <header class="perdafrios-header">
+        <h2 id="page-title">🧊 Perdas Frios</h2>
+    </header>
+
+    <section class="perdafrios-summary" aria-label="Resumo das perdas de frios">
+        <div class="summary-container">
+            <div class="summary-card total-frios">
+                <div class="summary-icon">🧊</div>
+                <div class="summary-content">
+                    <h3>Total Frios</h3>
+                    <p class="summary-value">{{ rf_vlr_total }}</p>
+                    <span class="summary-label">{{ rf_emb1_total }} unidades</span>
+                </div>
+            </div>
+            
+            <div class="summary-card eventos-frios">
+                <div class="summary-icon">📊</div>
+                <div class="summary-content">
+                    <h3>Eventos Analisados</h3>
+                    <p class="summary-value">{{ eventos_count if eventos_count else '7' }}</p>
+                    <span class="summary-label">Tipos de eventos</span>
+                </div>
+            </div>
+            
+            <div class="summary-card avariadas">
+                <div class="summary-icon">⚠️</div>
+                <div class="summary-content">
+                    <h3>Mercadorias Avariadas</h3>
+                    <p class="summary-value">{{ avariadas_vlr_total }}</p>
+                    <span class="summary-label">Por vencimento</span>
+                </div>
+            </div>
+            
+            <div class="summary-card periodo">
+                <div class="summary-icon">📅</div>
+                <div class="summary-content">
+                    <h3>Período</h3>
+                    <p class="summary-value">{{ data_atual if data_atual else 'Hoje' }}</p>
+                    <span class="summary-label">Data de análise</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="perdafrios-boxes" aria-label="Análise detalhada por categoria">
+        <div class="boxes-container">
+            <!-- Box 1: Perdas RF por Eventos Múltiplos -->
+            <div class="perdas-box box1">
+                <div class="box-header">
+                    <h3>📋 Perdas RF - Eventos Múltiplos</h3>
+                    <div class="box-info">
+                        <span class="event-codes">Eventos: 6004, 6001, 6504, 6021, 6501, 8000, 1500</span>
+                    </div>
+                    <div class="box-totals">
+                        <span class="total-value">{{ box1_vlr_total }}</span>
+                        <span class="total-units">{{ box1_emb1_total }} unidades</span>
+                    </div>
+                </div>
+                <div class="box-content">
+                    <div class="table-container">
+                        {% if box1 %}
+                            <table class="perdas-table">
+                                <thead>
+                                    <tr>
+                                        <th>Evento</th>
+                                        <th>Mercadoria</th>
+                                        <th>Descrição</th>
+                                        <th>Valor Total</th>
+                                        <th>EMB1</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in box1 %}
+                                    <tr class="evento-{{ item.EVENTO }}">
+                                        <td class="evento-code">{{ item.EVENTO }}</td>
+                                        <td>{{ item.MERCADORIA }}</td>
+                                        <td class="descricao" title="{{ item.DESCRICAO }}">{{ item.DESCRICAO }}</td>
+                                        <td class="valor">{{ item['VLR.TOTAL'] }}</td>
+                                        <td class="emb1">{{ item.EMB1 }}</td>
+                                        <td class="data">{{ item.DATA if item.DATA else '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="no-data">
+                                <div class="no-data-icon">🧊</div>
+                                <p>Nenhuma perda de produtos frios encontrada para os eventos analisados</p>
+                                <small>Eventos verificados: 6004, 6001, 6504, 6021, 6501, 8000, 1500</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 2: Perdas RF por Operação Específica -->
+            <div class="perdas-box box2">
+                <div class="box-header">
+                    <h3>⚠️ Perdas RF - Mercadorias Avariadas</h3>
+                    <div class="box-info">
+                        <span class="operation-type">Operação: MERCADORIAS AVARIADAS POR VENCIMENTO</span>
+                    </div>
+                    <div class="box-totals">
+                        <span class="total-value">{{ box2_vlr_total }}</span>
+                        <span class="total-units">{{ box2_emb1_total }} unidades</span>
+                    </div>
+                </div>
+                <div class="box-content">
+                    <div class="table-container">
+                        {% if box2 %}
+                            <table class="perdas-table">
+                                <thead>
+                                    <tr>
+                                        <th>Evento</th>
+                                        <th>Mercadoria</th>
+                                        <th>Descrição</th>
+                                        <th>Valor Total</th>
+                                        <th>EMB1</th>
+                                        <th>Operação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in box2 %}
+                                    <tr class="operacao-avariada">
+                                        <td class="evento-code">{{ item.EVENTO }}</td>
+                                        <td>{{ item.MERCADORIA }}</td>
+                                        <td class="descricao" title="{{ item.DESCRICAO }}">{{ item.DESCRICAO }}</td>
+                                        <td class="valor">{{ item['VLR.TOTAL'] }}</td>
+                                        <td class="emb1">{{ item.EMB1 }}</td>
+                                        <td class="operacao">{{ item.OPERACAO if item.OPERACAO else 'AVARIADAS POR VENCIMENTO' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="no-data">
+                                <div class="no-data-icon">⚠️</div>
+                                <p>Nenhuma perda por mercadorias avariadas encontrada</p>
+                                <small>Filtro: Produtos RF com operação "MERCADORIAS AVARIADAS POR VENCIMENTO"</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 3: Análise Consolidada RF -->
+            <div class="perdas-box box3">
+                <div class="box-header">
+                    <h3>📊 Análise Consolidada RF</h3>
+                    <div class="box-info">
+                        <span class="consolidation-type">Visão geral de todas as perdas de produtos refrigerados</span>
+                    </div>
+                    <div class="box-totals">
+                        <span class="total-value">{{ box3_vlr_total if box3_vlr_total else rf_vlr_total }}</span>
+                        <span class="total-units">{{ box3_emb1_total if box3_emb1_total else rf_emb1_total }} unidades</span>
+                    </div>
+                </div>
+                <div class="box-content">
+                    <div class="consolidation-grid">
+                        <div class="consolidation-card eventos">
+                            <h4>📋 Por Eventos</h4>
+                            <div class="consolidation-data">
+                                <span class="data-value">{{ box1_vlr_total if box1_vlr_total else '0,00' }}</span>
+                                <span class="data-label">{{ box1_emb1_total if box1_emb1_total else '0' }} unidades</span>
+                            </div>
+                        </div>
+                        
+                        <div class="consolidation-card avariadas">
+                            <h4>⚠️ Avariadas</h4>
+                            <div class="consolidation-data">
+                                <span class="data-value">{{ box2_vlr_total if box2_vlr_total else '0,00' }}</span>
+                                <span class="data-label">{{ box2_emb1_total if box2_emb1_total else '0' }} unidades</span>
+                            </div>
+                        </div>
+                        
+                        <div class="consolidation-card temperatura">
+                            <h4>🌡️ Controle Temperatura</h4>
+                            <div class="consolidation-data">
+                                <span class="data-value">{{ temperatura_perdas if temperatura_perdas else '0,00' }}</span>
+                                <span class="data-label">Perdas por temperatura</span>
+                            </div>
+                        </div>
+                        
+                        <div class="consolidation-card vencimento">
+                            <h4>📅 Vencimento</h4>
+                            <div class="consolidation-data">
+                                <span class="data-value">{{ vencimento_perdas if vencimento_perdas else '0,00' }}</span>
+                                <span class="data-label">Perdas por vencimento</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="top-produtos-frios">
+                        <h4>🎯 Principais Produtos com Perdas</h4>
+                        {% if top_produtos_frios %}
+                            <div class="produtos-list">
+                                {% for produto in top_produtos_frios %}
+                                <div class="produto-item">
+                                    <span class="produto-nome">{{ produto.descricao }}</span>
+                                    <span class="produto-valor">{{ produto.valor }}</span>
+                                    <span class="produto-unidades">{{ produto.unidades }} un.</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="no-produtos">Dados de produtos não disponíveis</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="perdafrios-analytics" aria-label="Análise estatística detalhada">
+        <div class="analytics-container">
+            <div class="analytics-card temperature-chart">
+                <h4>🌡️ Análise por Temperatura</h4>
+                <div class="temperature-zones">
+                    <div class="zone-item refrigerado">
+                        <span class="zone-label">Refrigerado (0-4°C)</span>
+                        <span class="zone-value">{{ refrigerado_perdas if refrigerado_perdas else '0,00' }}</span>
+                    </div>
+                    <div class="zone-item congelado">
+                        <span class="zone-label">Congelado (-18°C)</span>
+                        <span class="zone-value">{{ congelado_perdas if congelado_perdas else '0,00' }}</span>
+                    </div>
+                    <div class="zone-item resfriado">
+                        <span class="zone-label">Resfriado (4-8°C)</span>
+                        <span class="zone-value">{{ resfriado_perdas if resfriado_perdas else '0,00' }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="analytics-card event-distribution">
+                <h4>📊 Distribuição por Eventos</h4>
+                <div class="event-chart">
+                    {% if eventos_distribution %}
+                        {% for evento, dados in eventos_distribution.items() %}
+                        <div class="event-bar">
+                            <span class="event-label">Evento {{ evento }}</span>
+                            <div class="bar-container">
+                                <div class="bar-fill" style="width: {{ dados.percentage }}%"></div>
+                                <span class="bar-value">{{ dados.valor }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="no-distribution">Dados de distribuição não disponíveis</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</article>
+
+<style>
+.perdafrios-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header-container {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.page-title h2 {
+    color: #3498db;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.page-subtitle {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+
+.breadcrumb-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.breadcrumb-link {
+    color: #3498db;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.breadcrumb-link:hover {
+    background-color: #ecf0f1;
+}
+
+.breadcrumb-separator {
+    color: #bdc3c7;
+}
+
+.breadcrumb-current {
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.summary-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.summary-card.total-frios {
+    border-left: 5px solid #3498db;
+}
+
+.summary-card.eventos-frios {
+    border-left: 5px solid #9b59b6;
+}
+
+.summary-card.avariadas {
+    border-left: 5px solid #e74c3c;
+}
+
+.summary-card.periodo {
+    border-left: 5px solid #f39c12;
+}
+
+.summary-icon {
+    font-size: 3rem;
+    opacity: 0.8;
+}
+
+.summary-content h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.summary-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.summary-label {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.boxes-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(650px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.perdas-box {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.box1 {
+    border-top: 4px solid #3498db;
+}
+
+.box2 {
+    border-top: 4px solid #e74c3c;
+}
+
+.box3 {
+    border-top: 4px solid #9b59b6;
+    grid-column: 1 / -1;
+}
+
+.box-header {
+    background: #f8f9fa;
+    padding: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.box-header h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1.3rem;
+}
+
+.box-info {
+    margin-bottom: 15px;
+}
+
+.event-codes, .operation-type, .consolidation-type {
+    background: #e8f4fd;
+    color: #3498db;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.operation-type {
+    background: #fdeaea;
+    color: #e74c3c;
+}
+
+.consolidation-type {
+    background: #f4e8fd;
+    color: #9b59b6;
+}
+
+.box-totals {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.total-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.total-units {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.box-content {
+    padding: 20px;
+}
+
+.table-container {
+    max-height: 450px;
+    overflow-y: auto;
+}
+
+.perdas-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.perdas-table th {
+    background: #f8f9fa;
+    color: #2c3e50;
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.perdas-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.perdas-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.evento-code {
+    background: #e8f4fd;
+    color: #3498db;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.descricao {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.valor {
+    font-weight: bold;
+    color: #e74c3c;
+    text-align: right;
+}
+
+.emb1 {
+    text-align: center;
+    font-weight: 500;
+}
+
+.data {
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+.operacao {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.no-data {
+    text-align: center;
+    color: #7f8c8d;
+    padding: 60px 20px;
+}
+
+.no-data-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.no-data p {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.no-data small {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.consolidation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.consolidation-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.consolidation-card.eventos {
+    border-left: 4px solid #3498db;
+}
+
+.consolidation-card.avariadas {
+    border-left: 4px solid #e74c3c;
+}
+
+.consolidation-card.temperatura {
+    border-left: 4px solid #2ecc71;
+}
+
+.consolidation-card.vencimento {
+    border-left: 4px solid #f39c12;
+}
+
+.consolidation-card h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+.consolidation-data {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.data-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.data-label {
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+.top-produtos-frios h4 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+.produtos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.produto-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #3498db;
+}
+
+.produto-nome {
+    color: #2c3e50;
+    font-weight: 500;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.produto-valor {
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.produto-unidades {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.no-produtos {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    padding: 20px;
+}
+
+.analytics-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 25px;
+}
+
+.analytics-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-card h4 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+.temperature-zones {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.zone-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.zone-item.refrigerado {
+    background: #e8f4fd;
+    border-left: 4px solid #3498db;
+}
+
+.zone-item.congelado {
+    background: #e8f5e8;
+    border-left: 4px solid #2ecc71;
+}
+
+.zone-item.resfriado {
+    background: #fef5e7;
+    border-left: 4px solid #f39c12;
+}
+
+.zone-label {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.zone-value {
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.event-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.event-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.event-label {
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 30px;
+}
+
+.bar-fill {
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.bar-value {
+    color: #2c3e50;
+    font-weight: bold;
+    font-size: 0.85rem;
+    padding: 0 10px;
+}
+
+.no-distribution {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .boxes-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .analytics-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .consolidation-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .page-title h2 {
+        font-size: 2rem;
+    }
+    
+    .breadcrumb-nav {
+        flex-wrap: wrap;
+    }
+    
+    .perdas-table {
+        font-size: 0.8rem;
+    }
+    
+    .perdas-table th,
+    .perdas-table td {
+        padding: 8px 4px;
+    }
+    
+    .descricao {
+        max-width: 150px;
+    }
+    
+    .box-totals {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .produto-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar funcionalidade de ordenação às tabelas
+    const tables = document.querySelectorAll('.perdas-table');
+    
+    tables.forEach(table => {
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', () => sortTable(table, index));
+        });
+    });
+    
+    // Adicionar tooltips para descrições longas
+    const descricoes = document.querySelectorAll('.descricao');
+    descricoes.forEach(desc => {
+        if (desc.scrollWidth > desc.clientWidth) {
+            desc.style.cursor = 'help';
+        }
+    });
+    
+    // Animar barras de progresso
+    const bars = document.querySelectorAll('.bar-fill');
+    bars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 500);
+    });
+});
+
+function sortTable(table, column) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    const sortedRows = rows.sort((a, b) => {
+        const aText = a.cells[column].textContent.trim();
+        const bText = b.cells[column].textContent.trim();
+        
+        // Tentar converter para número se possível
+        const aNum = parseFloat(aText.replace(/[^\d.-]/g, ''));
+        const bNum = parseFloat(bText.replace(/[^\d.-]/g, ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return aNum - bNum;
+        }
+        
+        return aText.localeCompare(bText);
+    });
+    
+    // Limpar tbody e adicionar linhas ordenadas
+    tbody.innerHTML = '';
+    sortedRows.forEach(row => tbody.appendChild(row));
+}
+
+// Função para destacar eventos específicos
+function highlightEvent(eventCode) {
+    const rows = document.querySelectorAll(`.evento-${eventCode}`);
+    rows.forEach(row => {
+        row.style.backgroundColor = '#fff3cd';
+        setTimeout(() => {
+            row.style.backgroundColor = '';
+        }, 2000);
+    });
+}
+
+// Função para filtrar por zona de temperatura
+function filterByTemperature(zone) {
+    const rows = document.querySelectorAll('.perdas-table tbody tr');
+    rows.forEach(row => {
+        const descricao = row.querySelector('.descricao').textContent.toLowerCase();
+        const shouldShow = zone === 'all' || descricao.includes(zone.toLowerCase());
+        row.style.display = shouldShow ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

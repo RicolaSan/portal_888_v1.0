@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Vencimento - Impressão</title>
+    <style>
+        @media print {
+            body {
+                margin: 0;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .header p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .print-controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .print-controls button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .print-controls button:hover {
+            background-color: #0056b3;
+        }
+        
+        .print-controls a {
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .print-controls a:hover {
+            background-color: #545b62;
+        }
+        
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 11px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .styled-table thead tr {
+            background-color: #f8f9fa;
+            color: #333;
+            text-align: left;
+            border: 2px solid #333;
+        }
+        
+        .styled-table th,
+        .styled-table td {
+            padding: 8px 6px;
+            border: 1px solid #333;
+            text-align: left;
+        }
+        
+        .styled-table tbody tr {
+            border-bottom: 1px solid #333;
+        }
+        
+        .styled-table tbody tr:nth-of-type(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        
+        @media print {
+            .styled-table {
+                font-size: 9px;
+            }
+            
+            .styled-table th,
+            .styled-table td {
+                padding: 4px 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Relatório de Controle de Vencimento</h1>
+        <p id="data-geracao">Data de Geração: </p>
+        {% if filtro or dias_vencimento %}
+        <p><strong>Filtros Aplicados:</strong>
+            {% if filtro %}Busca: "{{ filtro }}"{% endif %}
+            {% if filtro and dias_vencimento %} | {% endif %}
+            {% if dias_vencimento %}Vencimento em até {{ dias_vencimento }} dias{% endif %}
+        </p>
+        {% endif %}
+        {% if total_items is defined %}
+        <p><strong>Total de Registros:</strong> {{ total_items }}</p>
+        {% endif %}
+        <p>Sistema de Gestão - Portal 888</p>
+    </div>
+    
+    <div class="print-controls no-print">
+        <button onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        <button onclick="window.history.back()">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+        <a href="{{ url_for('controle_vencimento.home') }}">
+            <i class="fas fa-home"></i> Página Principal
+        </a>
+    </div>
+    
+    <div class="content">
+        {{ vencimento|safe }}
+    </div>
+    
+    <div class="footer">
+        <p>Relatório gerado automaticamente pelo Sistema de Controle de Vencimento</p>
+        <p id="copyright">© - Portal 888 - Todos os direitos reservados</p>
+    </div>
+    
+    <script>
+        // Auto-print quando a página carregar (opcional)
+        // window.onload = function() { window.print(); }
+        
+        // Função para voltar
+        function goBack() {
+            window.history.back();
+        }
+        
+        // Preencher datas com JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR');
+            
+            // Preencher data de geração
+            const dataGeracaoEl = document.getElementById('data-geracao');
+            if (dataGeracaoEl) {
+                dataGeracaoEl.textContent = 'Data de Geração: ' + dateStr;
+            }
+            
+            // Preencher copyright
+            const copyrightEl = document.getElementById('copyright');
+            if (copyrightEl) {
+                copyrightEl.textContent = '© ' + now.getFullYear() + ' - Portal 888 - Todos os direitos reservados';
+            }
+        });
+    </script>
+</body>
+</html>

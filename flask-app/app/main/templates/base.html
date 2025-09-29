@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Portal Gerencial da Filial 888 - Sistema completo para controle de perdas, itens sem vendas e vencimentos">
+    <meta name="keywords" content="portal gerencial, controle perdas, ISV, vencimento, filial 888">
+    <meta name="author" content="Portal Gerencial Filial 888">
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Portal Gerencial Filial 888">
+    <meta property="og:description" content="Sistema completo para gestão eficiente da filial">
+    
+    <title>{% block title %}Portal Gerencial Filial 888{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('main.static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    
+    <!-- jQuery and DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+    
+    <!-- CSS para garantir que o header sempre fique no topo -->
+    <style>
+        /* Garantir que o header sempre fique no topo */
+        header {
+            z-index: 10001 !important;
+            position: sticky !important;
+            top: 0 !important;
+        }
+        
+        /* Garantir que o dropdown do navbar fique acima de tudo */
+        .dropdown-menu {
+            z-index: 10002 !important;
+        }
+        
+        /* Ajustar z-index de elementos que podem conflitar */
+        .modal {
+            z-index: 9999 !important;
+        }
+        
+        .notification {
+            z-index: 9998 !important;
+        }
+        
+        /* Garantir que tabelas sticky headers não sobreponham o navbar */
+        .styled-table thead th,
+        .itens-table-content th,
+        table thead th {
+            z-index: 100 !important;
+        }
+        
+        /* Garantir espaçamento adequado do conteúdo em relação ao navbar */
+        main {
+            padding-top: 20px !important;
+        }
+        
+        /* Espaçamento específico para páginas do controle de perdas */
+        .totalperdas-page,
+        .perda-hf-page,
+        .perda-vencimento-page,
+        .ajuste-preventiva-page,
+        .perdafrios-page,
+        .perdaporgrupo-page,
+        .negativo-page {
+            padding-top: 30px !important;
+        }
+        
+        /* Espaçamento para headers de páginas */
+        .header-container,
+        .totalperdas-header,
+        .perda-hf-header,
+        .perda-vencimento-header {
+            margin-top: 20px !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay" role="status" aria-label="Carregando conteúdo">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <div class="loading-text">Carregando...</div>
+    </div>
+
+    <header role="banner">
+        <div class="container">
+            <div class="logo-section">
+                <img
+                    src="{{ url_for('main.static', filename='imagem/atacadao.png') }}"
+                    alt="Portal Logo"
+                    class="logo"
+                />
+                <h1>Portal Gerencial</h1>
+            </div>
+
+            <nav class="navbar" role="navigation" aria-label="Navegação principal">
+                <ul class="nav-menu" role="menubar">
+                    <li class="nav-item dropdown" role="none">
+                        <a href="#" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de Perdas</a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="/controle-perdas/totalperdas">📊 Perdas Total</a></li>
+                            <li><a href="/controle-perdas/perda_hf">🥬 Perdas Hortifruti</a></li>
+                            <li><a href="/controle-perdas/perdafrios">🧊 Perdas Frios</a></li>
+                            <li><a href="/controle-perdas/perda_vencimento">⏰ Perdas Por Vencimento</a></li>
+                            <li><a href="/controle-perdas/perdaporgrupo">🏪 Perdas Por Grupo</a></li>
+                            <li><a href="/controle-perdas/negativo">🔧 Ajuste Automático Negativo</a></li>
+                            <li><a href="/controle-perdas/ajustepreventiva">📋 Ajuste Contagem Preventiva</a></li>
+                            <li><a href="/controle-perdas/menu">📋 Menu Completo</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item dropdown" role="none">
+                        <a href="/controle-isv/page" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de ISV</a>
+                    </li>
+
+                    <li class="nav-item dropdown" role="none">
+                        <a href="/controle-vencimento/" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de Vencimento</a>
+                    </li>
+
+                    <li class="nav-item dropdown" role="none">
+                        <a href="#" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de Ruptura</a>                        
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main role="main">
+        <div class="container">
+            {% block content %}
+            <!-- Seção dinâmica para ISV -->
+            <div id="isv-content" class="isv-section" style="display: none;">
+                <!-- Conteúdo do ISV será carregado aqui via AJAX -->
+            </div>
+            
+
+            
+            <div class="welcome-section" id="welcome-section">
+                <h2>Portal Gerencial 888</h2>
+                <p>Gestão eficiente e moderna para sua filial.</p>
+            </div>
+            {% endblock %}
+        </div>
+    </main>
+
+    <footer role="contentinfo">
+        <p>&copy; 2025 Portal Gerencial Filial 888. Desenvovido por Lucas coito & Carlos Santos</p>
+    </footer>
+
+    <script>
+        // Loading Overlay Control
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.add('show');
+            }
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+            }
+        }
+
+        // Hide loading when page is fully loaded
+        window.addEventListener('load', function() {
+            hideLoading();
+        });
+
+        // Show loading for navigation links
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loading overlay on page load
+            hideLoading();
+            
+            // Add loading to navigation links that load new pages
+            document.querySelectorAll('a[href]:not([href^="#"]):not([href^="javascript:"])').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Don't show loading for dropdown toggles
+                    if (!this.getAttribute('aria-haspopup')) {
+                        showLoading();
+                    }
+                });
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add loading animation to external links
+        document.querySelectorAll('a[href^="http"]').forEach(link => {
+            link.addEventListener('click', function() {
+                this.innerHTML += ' <span class="loading"></span>';
+            });
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe feature cards
+        document.querySelectorAll('.feature-card, .stat-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+
+        // Add hover effects to navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px) scale(1.05)';
+            });
+            
+            link.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Função para carregar conteúdo ISV via AJAX do blueprint
+        function loadISVContent() {
+            console.log('=== loadISVContent INICIADA ===');
+            
+            try {
+                const isvSection = document.getElementById('isv-content');
+                const welcomeSection = document.getElementById('welcome-section');
+                
+                console.log('Elementos encontrados:', {
+                    isvSection: !!isvSection,
+                    welcomeSection: !!welcomeSection
+                });
+                
+                if (!isvSection) {
+                    console.error('Elemento isv-content não encontrado!');
+                    return;
+                }
+                
+                // Mostrar loading
+                isvSection.innerHTML = '<div class="loading-spinner" style="text-align: center; padding: 50px;">🔄 Carregando dados ISV...</div>';
+                
+                // Mostrar seção ISV e ocultar outras
+                isvSection.style.display = 'block';
+                if (welcomeSection) welcomeSection.style.display = 'none';
+                
+                console.log('Fazendo fetch para /controle-isv/content...');
+                
+                // Carregar template HTML do blueprint ISV
+                fetch('/controle-isv/content')
+                .then(response => response.text())
+                .then(html => {
+                    isvSection.innerHTML = html;
+                    console.log('Template ISV carregado com sucesso');
+                    
+                    // Função para aguardar jQuery estar disponível
+                    function waitForJQuery(callback) {
+                        if (typeof $ !== 'undefined' && $.fn && $.fn.dataTable) {
+                            callback();
+                        } else {
+                            console.log('Aguardando jQuery e DataTables...');
+                            setTimeout(() => waitForJQuery(callback), 100);
+                        }
+                    }
+                    
+                    // Verificar se o script já foi carregado
+                    if (!document.querySelector('script[src="/controle-isv/static/isv_functions.js"]')) {
+                        // Carregar e executar o JavaScript do ISV
+                        const script = document.createElement('script');
+                        script.src = '/controle-isv/static/isv_functions.js';
+                        script.onload = function() {
+                            console.log('JavaScript ISV carregado, aguardando jQuery...');
+                            waitForJQuery(() => {
+                                console.log('jQuery disponível, iniciando loadISVData...');
+                                if (typeof loadISVData === 'function') {
+                                    loadISVData();
+                                } else {
+                                    console.error('Função loadISVData não encontrada');
+                                }
+                            });
+                        };
+                        script.onerror = function() {
+                            console.error('Erro ao carregar script ISV');
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        // Script já carregado, executar diretamente
+                        console.log('Script ISV já carregado, aguardando jQuery...');
+                        waitForJQuery(() => {
+                            console.log('jQuery disponível, executando loadISVData...');
+                            if (typeof loadISVData === 'function') {
+                                loadISVData();
+                            } else {
+                                console.error('Função loadISVData não encontrada');
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar template ISV:', error);
+                    isvSection.innerHTML = '<div class="error-message" style="color: red; text-align: center; padding: 50px;">❌ Erro ao carregar página ISV: ' + error.message + '</div>';
+                });
+            } catch (error) {
+                console.error('Erro geral na função loadISVContent:', error);
+                alert('Erro ao carregar ISV: ' + error.message);
+            }
+        }
+        
+
+ 
+    </script>
+</body>
+</html>
