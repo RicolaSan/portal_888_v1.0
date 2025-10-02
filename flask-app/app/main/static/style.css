@@ -328,7 +328,8 @@ main {
 
 .filter-group {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: 0.5rem;
 }
 
@@ -336,6 +337,9 @@ main {
     font-weight: 600;
     color: var(--dark-brown);
     font-size: 0.9rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-right: 0.3rem;
 }
 
 .filter-group input,

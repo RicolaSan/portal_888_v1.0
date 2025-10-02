@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Controle de Ruptura</title>
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            padding: 20px;
+        }
+
+        .print-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #33A621;
+            padding-bottom: 15px;
+        }
+
+        .print-header h1 {
+            color: #33A621;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .print-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .print-info .left {
+            text-align: left;
+        }
+
+        .print-info .right {
+            text-align: right;
+        }
+
+        /* Estilos da tabela */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin: 0;
+        }
+
+        .print-table thead th {
+            background: #33A621 !important;
+            color: white !important;
+            padding: 8px 6px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #2a8f1a;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .print-table tbody td {
+            padding: 6px 6px;
+            border: 1px solid #ddd;
+            font-size: 10px;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+
+        .print-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9 !important;
+        }
+
+        .print-table tbody tr:hover {
+            background-color: #f5f5f5 !important;
+        }
+
+        /* Botão de impressão */
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #33A621;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: #2a8f1a;
+        }
+
+        .print-button i {
+            margin-right: 5px;
+        }
+
+        /* Estilos específicos para impressão */
+        @media print {
+            body {
+                margin: 0;
+                padding: 10px;
+                background: white !important;
+            }
+
+            .print-button {
+                display: none !important;
+            }
+
+            .print-header {
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+            }
+
+            .print-header h1 {
+                font-size: 20px;
+                margin-bottom: 8px;
+            }
+
+            .print-info {
+                font-size: 12px;
+                margin-bottom: 15px;
+            }
+
+            .print-table {
+                font-size: 9px;
+                page-break-inside: auto;
+            }
+
+            .print-table thead th {
+                background: #333 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                padding: 6px 4px;
+                font-size: 9px;
+            }
+
+            .print-table tbody td {
+                padding: 4px 4px;
+                font-size: 8px;
+            }
+
+            .print-table tbody tr:nth-child(even) {
+                background-color: #f9f9f9 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Configurações da página */
+            @page {
+                margin: 10mm;
+                size: A4 landscape;
+            }
+
+            /* Quebra de página para tabelas grandes */
+            .print-table thead {
+                display: table-header-group;
+            }
+
+            .print-table tbody {
+                display: table-row-group;
+            }
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .print-header h1 {
+                font-size: 20px;
+            }
+
+            .print-info {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .print-table {
+                font-size: 10px;
+            }
+
+            .print-button {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 20px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Botão de impressão -->
+    <button onclick="window.print()" class="print-button">
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+
+    <!-- Cabeçalho do relatório -->
+    <div class="print-header">
+        <h1>Relatório de Controle de Ruptura</h1>
+        {% if grupo_selecionado and grupo_selecionado != 'todos' %}
+            <p>Grupo: {{ grupo_selecionado }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Informações do relatório -->
+    <div class="print-info">
+        <div class="left">
+            <p><strong>Data de impressão:</strong> <span id="print-date"></span></p>
+            <p><strong>Hora:</strong> <span id="print-time"></span></p>
+        </div>
+        <div class="right">
+            <p><strong>Total de itens:</strong> {{ total_items }}</p>
+            {% if grupo_selecionado and grupo_selecionado != 'todos' %}
+                <p><strong>Filtro aplicado:</strong> {{ grupo_selecionado }}</p>
+            {% else %}
+                <p><strong>Filtro:</strong> Todos os grupos</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tabela de dados -->
+    <div class="table-container">
+        {% if smg12_df and smg12_df != '' %}
+            {{ smg12_df|safe }}
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <p>Nenhum dado encontrado para impressão.</p>
+                {% if grupo_selecionado and grupo_selecionado != 'todos' %}
+                    <p>Verifique se o grupo "{{ grupo_selecionado }}" possui dados disponíveis.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Definir data e hora atuais
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const dateOptions = { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+            };
+            const timeOptions = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            };
+            
+            document.getElementById('print-date').textContent = now.toLocaleDateString('pt-BR', dateOptions);
+            document.getElementById('print-time').textContent = now.toLocaleTimeString('pt-BR', timeOptions);
+        });
+
+        // Auto-impressão opcional (descomentado se necessário)
+        // window.onload = function() { 
+        //     setTimeout(() => window.print(), 500); 
+        // }
+    </script>
+
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</body>
+</html>

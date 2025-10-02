@@ -7,24 +7,26 @@
     <section class="perda-vencimento-summary" aria-label="Resumo geral">
         <div class="perda-vencimento-table-container">
             <header class="perda-vencimento-header">
-                <h2 id="page-title">📅 Perdas por Vencimento</h2>
-                
-                <div class="summary-container">
-                    <div class="summary-card total-vencimento">
-                        <div class="summary-content">
-                            <h3>Total de Perdas</h3>
-                            <p class="summary-value">{{ vencimento_vlr_total }}</p>
-                        </div>
+                <div class="header-content">
+                    <div class="header-title">
+                        <h2 id="page-title">📅 Perdas por Vencimento</h2>
                     </div>
                     
-                    <div class="summary-card produtos-vencidos">
-                        <div class="summary-content">
-                            <h3>Total EMB1</h3>
-                            <p class="summary-value">{{ vencimento_emb1_total if vencimento_emb1_total else '0' }}</p>
+                    <div class="summary-container">
+                        <div class="summary-card total-vencimento">
+                            <div class="summary-content">
+                                <h3>Total de Perdas</h3>
+                                <p class="summary-value">{{ vencimento_vlr_total }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-card produtos-vencidos">
+                            <div class="summary-content">
+                                <h3>Total EMB1</h3>
+                                <p class="summary-value">{{ vencimento_emb1_total if vencimento_emb1_total else '0' }}</p>
+                            </div>
                         </div>
                     </div>
-                    
-
                 </div>
             </header>
         </div>
@@ -89,16 +91,24 @@
 }
 
 .perda-vencimento-header {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
     margin: 0 0 6px;
+    margin-top: 0 !important;
     padding: 0.3rem;
     background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
     border-radius: 5px;
     box-shadow: 0 4px 15px rgba(51, 166, 33, 0.2);
     color: var(--white);
-    text-align: center;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-title {
+    flex-shrink: 0;
 }
 
 .perda-vencimento-header h2 {
@@ -119,11 +129,11 @@
 }
 
 .summary-container {
-    display: grid;
-    grid-template-columns: repeat(2, 200px);
-    gap: 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     margin-bottom: 0;
-    justify-content: center;
 }
 
 .summary-card {
@@ -488,19 +498,26 @@
 
 
 @media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .summary-container {
+        justify-content: center;
+    }
+    
+    .header-title {
+        text-align: center;
+    }
+    
     .perda-vencimento-header {
         padding: 6px;
     }
     
     .perda-vencimento-header h2 {
         font-size: 1.2rem;
-    }
-    
-
-    
-    .summary-container {
-        grid-template-columns: 1fr;
-        gap: 4px;
     }
     
     .summary-card {

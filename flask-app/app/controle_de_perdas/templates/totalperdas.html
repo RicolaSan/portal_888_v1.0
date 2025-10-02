@@ -4,39 +4,41 @@
 
 {% block content %}
 <article class="totalperdas-page" role="main" aria-labelledby="page-title">
-    <section class="totalperdas-summary" aria-label="Resumo geral">
-        <div class="totalperdas-table-container">
+    <section class="totalperdas-boxes" aria-label="Análise detalhada por categoria">
+        <!-- Header e Boxes para valores acumulados do mês -->
+        <div class="section-group">
             <header class="totalperdas-header">
-                <h2 id="page-title">Total de Perdas</h2>
-                
-                <div class="summary-container">
-                    <div class="summary-card central">
-                    <div class="summary-content">
-                        <h3>Valor total Avaria</h3>
-                        <p class="summary-value">{{ box1_vlr_total }}</p>
+                <div class="header-content">
+                    <div class="header-title">
+                        <h2 id="page-title">Total de Perdas - Acumulado do Mês</h2>
                     </div>
-                </div>
-                
-                <div class="summary-card alternativo">
-                    <div class="summary-content">
-                        <h3>Valor total Ajuste</h3>
-                        <p class="summary-value">{{ box2_vlr_total }}</p>
+                    
+                    <div class="summary-container">
+                        <div class="summary-card central">
+                        <div class="summary-content">
+                            <h3>Valor total Avaria</h3>
+                            <p class="summary-value">{{ box1_vlr_total }}</p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="summary-card total">
-                    <div class="summary-content">
-                        <h3>Perda Total</h3>
-                        <p class="summary-value">{{ perda_total }}</p>
+                    
+                    <div class="summary-card alternativo">
+                        <div class="summary-content">
+                            <h3>Valor total Ajuste</h3>
+                            <p class="summary-value">{{ box2_vlr_total }}</p>
+                        </div>
                     </div>
-                </div>
+                    
+                    <div class="summary-card total">
+                        <div class="summary-content">
+                            <h3>Perda Total</h3>
+                            <p class="summary-value">{{ perda_total }}</p>
+                        </div>
+                    </div>
+                    </div>
                 </div>
             </header>
-        </div>
-    </section>
-
-    <section class="totalperdas-boxes" aria-label="Análise detalhada por categoria">
-        <div class="boxes-container">
+            
+            <div class="boxes-container monthly-boxes">
             <!-- Box 1: Evento 1500 (Geral) -->
             <div class="perdas-box box1">
                 <div class="box-header">
@@ -118,11 +120,47 @@
                     </div>
                 </div>
             </div>
+            </div>
+        </div>
 
+        <!-- Header e Boxes para valores da data atual -->
+        <div class="section-group daily-section">
+            <header class="totalperdas-header daily-header">
+                <div class="header-content">
+                    <div class="header-title">
+                        <h2>Perdas de Hoje</h2>
+                    </div>
+                    
+                    <div class="summary-container">
+                        <div class="summary-card daily-avaria">
+                            <div class="summary-content">
+                                <h3>Avarias Hoje</h3>
+                                <p class="summary-value">{{ box3_vlr_total }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-card daily-ajuste">
+                            <div class="summary-content">
+                                <h3>Ajustes Hoje</h3>
+                                <p class="summary-value">{{ box4_vlr_total }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-card daily-total">
+                            <div class="summary-content">
+                                <h3>Total Hoje</h3>
+                                <p class="summary-value">{{ (box3_vlr_total|float + box4_vlr_total|float)|round(2) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="boxes-container daily-boxes">
             <!-- Box 3: Evento 1500 (Data Atual) -->
             <div class="perdas-box box3">
                 <div class="box-header">
-                    <h3>📅 Perdas Hoje - Evento 1500</h3>
+                    <h3>AVARIAS DATA ATUAL</h3>
                     <div class="box-totals">
                         <span class="total-value">{{ box3_vlr_total }}</span>
                         <span class="total-units">EMB1: {{ box3_emb1_total }}</span>
@@ -163,7 +201,7 @@
             <!-- Box 4: Eventos Múltiplos (Data Atual) -->
             <div class="perdas-box box4">
                 <div class="box-header">
-                    <h3>📅 Perdas Hoje - Eventos Múltiplos</h3>
+                    <h3>AJUSTES DATA ATUAL</h3>
                     <div class="box-totals">
                         <span class="total-value">{{ box4_vlr_total }}</span>
                         <span class="total-units">EMB1: {{ box4_emb1_total }}</span>
@@ -200,6 +238,7 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
     </section>
 </article>
@@ -219,31 +258,67 @@
 }
 
 .totalperdas-header {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 0 0 6px;
+    margin: 0 0 6px 0;
+    margin-top: 0 !important;
     padding: 0.5rem;
     background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
     border-radius: 5px;
     box-shadow: 0 4px 15px rgba(51, 166, 33, 0.2);
     color: var(--white);
-    text-align: center;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-title {
+    flex-shrink: 0;
+}
+
+.header-title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Header específico para a seção da data atual */
+.totalperdas-header.daily-header {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    box-shadow: 0 4px 15px rgba(52, 73, 94, 0.2);
+}
+
+/* Estilos para as seções agrupadas */
+.section-group {
+    margin-bottom: 20px;
+    margin-top: 0;
+}
+
+.section-group:first-child {
+    margin-top: 0 !important;
+}
+
+.section-group.daily-section {
+    margin-top: 20px;
 }
 
 .totalperdas-page {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 12px;
+    padding: 0 12px 12px 12px;
     position: relative;
     z-index: 100;
+    margin-top: 0 !important;
     padding-top: 0 !important;
 }
 
 .summary-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 6px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     margin-bottom: 0;
 }
 
@@ -308,12 +383,21 @@
     font-weight: bold;
 }
 
-.summary-container {
-    display: grid;
-    grid-template-columns: repeat(3, 200px);
-    gap: 20px;
-    margin-bottom: 0;
-    justify-content: center;
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .summary-container {
+        justify-content: center;
+    }
+    
+    .header-title {
+        text-align: center;
+    }
 }
 
 .summary-card {
@@ -376,10 +460,36 @@
 }
 
 .table-container {
-    max-height: calc(75vh - 80px);
+    max-height: 320px; /* Altura para mostrar aproximadamente 11 linhas (1 header + 10 dados) */
     overflow-y: auto;
     margin: 0;
     padding: 0;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+/* Estilização da barra de rolagem */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.perdas-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
 .perdas-table th {
@@ -391,6 +501,9 @@
     font-weight: 600;
     font-size: 0.65rem;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .perdas-table td {
@@ -597,6 +710,23 @@
 .summary-card.total {
     background: linear-gradient(135deg, #e74c3c, #c0392b);
     border: 1px solid #b03a2e;
+}
+
+/* Estilos para os cards da data atual */
+
+.summary-card.daily-avaria {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    border: 1px solid #7d3c98;
+}
+
+.summary-card.daily-ajuste {
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    border: 1px solid #148f77;
+}
+
+.summary-card.daily-total {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    border: 1px solid #273746;
 }
 </style>
 

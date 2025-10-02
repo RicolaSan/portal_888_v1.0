@@ -3,77 +3,149 @@
 {% block title %}Controle de ISV - Portal 888{% endblock %}
 
 {% block content %}
-<article class="isv-page" role="main" aria-labelledby="page-title">
-    {% if isv_data.error %}
-    <section class="error-section" role="alert" aria-live="assertive">
-        <div class="error-message" style="color: red; text-align: center; padding: 50px; background: #ffe6e6; border: 1px solid #ff9999; border-radius: 5px; margin: 20px 0;">
-            ❌ Erro ao carregar dados: {{ isv_data.error }}
-        </div>
-    </section>
-    {% else %}
-    <section class="isv-data" aria-label="Dados dos itens sem vendas">
-        <div class="isv-table-container">
-            <header class="isv-header">
-                <h2 id="page-title">Controle de ISV</h2>
-                <form class="isv-filters" role="search" aria-label="Filtros de busca">
-                    <div class="filter-group">
-                        <label for="search-input">Buscar:</label>
-                        <input type="search" id="search-input" placeholder="Buscar..." class="form-control">
-                    </div>
-                    <div class="filter-group">
-                        <label for="dias-filter">Dias sem venda:</label>
-                        <input type="number" id="dias-filter" min="0" placeholder="30" class="form-control">
-                    </div>
-                    <div class="filter-group">
-                        <button onclick="clearAllFilters()" class="btn btn-outline" aria-label="Limpar todos os filtros">
-                           Limpar Filtros
-                        </button>
-                        <button onclick="printFilteredData()" class="btn btn-secondary" aria-label="Imprimir dados filtrados">
-                            Imprimir
-                        </button>
-                    </div>
-                </form>
-            </header>
-            
+<!-- CSS crítico inline para evitar FOUC -->
+<style>
+    .content-wrapper {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .content-wrapper.loaded {
+        opacity: 1;
+    }
+    .loading-spinner-main {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+        font-size: 1.2rem;
+        color: #666;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .loading-spinner-main.hidden {
+        display: none;
+    }
+    .spinner-icon-main {
+        font-size: 2rem;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
 
-            
-            <table id="isv-table" class="display" role="table" aria-label="Tabela de itens sem vendas">
-                <thead>
-                    <tr>
-                        <th scope="col">Código</th>
-                        <th scope="col">Descrição</th>
-                        <th scope="col">Embalagem</th>
-                        <th scope="col">Fornecedor</th>
-                        <th scope="col">Estoque EMB1</th>
-                        <th scope="col">Estoque EMB9</th>
-                        <th scope="col">Dias S/VND</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in isv_data.data %}
-                    <tr>
-                        <td>{{ item.CODIGO }}</td>
-                        <td>{{ item.DESCRICAO }}</td>
-                        <td>{{ item.EMBALAGEM }}</td>
-                        <td>{{ item.FORNECEDOR }}</td>
-                        <td>{{ item['ESTOQUE EMB1'] }}</td>
-                        <td>{{ item['ESTOQUE EMB9'] }}</td>
-                        <td>{{ item['DIAS S/VND'] }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-    {% endif %}
-</article>
+<!-- Indicador de carregamento -->
+<div class="loading-spinner-main" id="loadingSpinnerMain">
+    <i class="fas fa-spinner spinner-icon-main"></i>
+    <span>Carregando dados ISV...</span>
+</div>
+<div class="content-wrapper" id="contentWrapper">
+    <article class="isv-page" role="main" aria-labelledby="page-title">
+        {% if isv_data.error %}
+        <section class="error-section" role="alert" aria-live="assertive">
+            <div class="error-message" style="color: red; text-align: center; padding: 50px; background: #ffe6e6; border: 1px solid #ff9999; border-radius: 5px; margin: 20px 0;">
+                ❌ Erro ao carregar dados: {{ isv_data.error }}
+            </div>
+        </section>
+        {% else %}
+        <section class="isv-data" aria-label="Dados dos itens sem vendas">
+            <div class="isv-table-container">
+                <header class="isv-header">
+                    <h2 id="page-title">Controle de ISV</h2>
+                    <form class="isv-filters" role="search" aria-label="Filtros de busca">
+                        <div class="filter-group">
+                            <label for="search-input">Buscar:</label>
+                            <input type="search" id="search-input" placeholder="Buscar..." class="form-control">
+                        </div>
+                        <div class="filter-group">
+                            <label for="dias-filter">Dias sem venda:</label>
+                            <input type="number" id="dias-filter" min="0" placeholder="30" class="form-control">
+                        </div>
+                        <div class="filter-group">
+                            <button type="button" onclick="applyFilters()" class="btn btn-filter" aria-label="Aplicar filtros">
+                                Filtrar
+                            </button>
+                            <button type="button" onclick="clearAllFilters()" class="btn btn-clear" aria-label="Limpar todos os filtros">
+                               Limpar
+                            </button>
+                            <button type="button" onclick="printFilteredData()" class="btn btn-secondary" aria-label="Imprimir dados filtrados">
+                                Imprimir
+                            </button>
+                        </div>
+                    </form>
+                </header>
+                
+
+                
+                <div class="table-wrapper" role="table" aria-label="Tabela de itens sem vendas">
+                    <table id="isv-table" class="display">
+                        <thead>
+                            <tr>
+                                <th scope="col">Código</th>
+                                <th scope="col">Descrição</th>
+                                <th scope="col">Embalagem</th>
+                                <th scope="col">Fornecedor</th>
+                                <th scope="col">Estoque EMB1</th>
+                                <th scope="col">Estoque EMB9</th>
+                                <th scope="col">Dias S/VND</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in isv_data.data %}
+                            <tr>
+                                <td>{{ item.CODIGO }}</td>
+                                <td>{{ item.DESCRICAO }}</td>
+                                <td>{{ item.EMBALAGEM }}</td>
+                                <td>{{ item.FORNECEDOR }}</td>
+                                <td>{{ item['ESTOQUE EMB1'] }}</td>
+                                <td>{{ item['ESTOQUE EMB9'] }}</td>
+                                <td>{{ item['DIAS S/VND'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+    </article>
+</div>
 
 <script>
+// FOUC prevention - Control content visibility
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const loadingSpinner = document.getElementById('loadingSpinnerMain');
+        const contentWrapper = document.getElementById('contentWrapper');
+        
+        if (loadingSpinner) {
+            loadingSpinner.style.display = 'none';
+        }
+        if (contentWrapper) {
+            contentWrapper.classList.add('loaded');
+        }
+    }, 100);
+});
+
+// Fallback for window load
+window.addEventListener('load', function() {
+    const loadingSpinner = document.getElementById('loadingSpinnerMain');
+    const contentWrapper = document.getElementById('contentWrapper');
+    
+    if (loadingSpinner) {
+        loadingSpinner.style.display = 'none';
+    }
+    if (contentWrapper) {
+        contentWrapper.classList.add('loaded');
+    }
+});
+
 // JavaScript específico para a página ISV
 $(document).ready(function() {
     // Inicializar DataTable
     var table = $('#isv-table').DataTable({
-        "pageLength": 25,
+        "pageLength": 50,
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Portuguese-Brasil.json"
         },
@@ -81,47 +153,45 @@ $(document).ready(function() {
         "dom": 'rtip' // Remove a caixa de busca padrão e o seletor de length
     });
 
-    // Implementar filtro de busca personalizado
-    $('#search-input').on('keyup', function() {
-        table.search(this.value).draw();
-    });
-
-    // Implementar filtro de dias sem venda
-    $('#dias-filter').on('input change', function() {
-        var diasValue = parseInt(this.value);
-        
-        if (isNaN(diasValue) || diasValue < 0) {
-            // Remover filtro
-            $.fn.dataTable.ext.search.pop();
-        } else {
-            // Adicionar filtro
-            $.fn.dataTable.ext.search.push(
-                function(settings, data, dataIndex) {
-                    if (settings.nTable.id !== 'isv-table') {
-                        return true;
-                    }
-                    var dias = parseInt(data[3]) || 0;
-                    return dias >= diasValue;
-                }
-            );
-        }
-        
-        table.draw();
-    });
+    // Remover filtragem em tempo real - filtros só serão aplicados quando o botão for clicado
 });
 
-// Função para limpar o filtro de dias
-function clearDiasFilter() {
-    document.getElementById('dias-filter').value = '';
-    $('#dias-filter').trigger('change');
+// Função para aplicar filtros quando o botão for clicado
+function applyFilters() {
+    // Obter valores dos filtros
+    var searchValue = document.getElementById('search-input').value;
+    var diasValue = parseInt(document.getElementById('dias-filter').value);
+    
+    // Obter a instância da DataTable
+    var table = $('#isv-table').DataTable();
+    
+    // Limpar filtros personalizados anteriores
+    $.fn.dataTable.ext.search = [];
+    
+    // Aplicar filtro de busca
+    table.search(searchValue);
+    
+    // Aplicar filtro de dias se válido
+    if (!isNaN(diasValue) && diasValue >= 0) {
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                if (settings.nTable.id !== 'isv-table') {
+                    return true;
+                }
+                var dias = parseInt(data[6]) || 0; // Coluna "Dias S/VND" é a 7ª (índice 6)
+                return dias >= diasValue;
+            }
+        );
+    }
+    
+    // Redesenhar a tabela com os filtros aplicados
+    table.draw();
 }
 
 // Função para limpar todos os filtros
 function clearAllFilters() {
-    // Limpar campo de busca
+    // Limpar campos de entrada
     document.getElementById('search-input').value = '';
-    
-    // Limpar filtro de dias
     document.getElementById('dias-filter').value = '';
     
     // Obter a instância da DataTable
@@ -132,10 +202,6 @@ function clearAllFilters() {
     
     // Limpar busca da DataTable
     table.search('').draw();
-    
-    // Mostrar mensagem de confirmação
-    // Opcional: você pode remover esta linha se não quiser a mensagem
-    alert('Todos os filtros foram limpos!');
 }
 
 // Função para imprimir apenas os dados filtrados
@@ -328,12 +394,13 @@ function printFilteredData() {
     box-shadow: 0 4px 15px rgba(51, 166, 33, 0.2);
     color: var(--white);
     gap: 1rem;
+    border-bottom: 3px solid var(--accent-orange);
 }
 
 .isv-header h2 {
     margin: 0;
     color: var(--white);
-    font-size: 1.1rem;
+    font-size: 22.4px;
     font-weight: 600;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -394,11 +461,82 @@ function printFilteredData() {
     box-shadow: 0 4px 12px rgba(51, 166, 33, 0.3);
 }
 
+/* Novo estilo para o botão Filtrar */
+.btn-filter {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: var(--white);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-filter:hover {
+    background: linear-gradient(135deg, #20c997, #28a745);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.btn-filter:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-filter::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-filter:hover::before {
+    left: 100%;
+}
+
+/* Novo estilo para o botão Limpar */
+.btn-clear {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
+    color: var(--white);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-clear:hover {
+    background: linear-gradient(135deg, #e74c3c, #dc3545);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn-clear:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-clear::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-clear:hover::before {
+    left: 100%;
+}
+
 .isv-filters {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
     margin: 0;
+    margin-left: auto;
     padding: 0;
     background: transparent;
     border-radius: 0;
@@ -406,7 +544,8 @@ function printFilteredData() {
     border: none;
     align-items: center;
     justify-content: flex-end;
-    flex: 1;
+    flex: none;
+    min-width: 60%;
 }
 
 .filter-group {
@@ -572,11 +711,25 @@ function printFilteredData() {
     box-sizing: border-box;
 }
 
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+.table-wrapper table,
 #isv-table {
     width: 100% !important;
     border-collapse: collapse;
+    display: table !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    table-layout: fixed;
+    min-width: 900px;
+    font-size: 13px;
 }
 
+.table-wrapper table thead th,
 #isv-table thead th {
     background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
     color: var(--white);
@@ -584,22 +737,60 @@ function printFilteredData() {
     text-align: left;
     font-weight: 600;
     border: none;
+    border-right: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+.table-wrapper table thead th:last-child,
+#isv-table thead th:last-child {
+    border-right: none;
+}
+
+.table-wrapper table tbody td,
 #isv-table tbody td {
     padding: 4px;
     border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     color: var(--dark-gray);
     vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
 }
 
+.table-wrapper table tbody td:last-child,
+#isv-table tbody td:last-child {
+    border-right: none;
+}
+
+/* Larguras específicas para cada coluna da tabela ISV */
+#isv-table th:nth-child(1),
+#isv-table td:nth-child(1) { width: 8%; white-space: nowrap; } /* CODIGO */
+#isv-table th:nth-child(2),
+#isv-table td:nth-child(2) { width: 25%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* DESCRICAO */
+#isv-table th:nth-child(3),
+#isv-table td:nth-child(3) { width: 12%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* EMBALAGEM */
+#isv-table th:nth-child(4),
+#isv-table td:nth-child(4) { width: 20%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* FORNECEDOR */
+#isv-table th:nth-child(5),
+#isv-table td:nth-child(5) { width: 10%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* ESTOQUE EMB1 */
+#isv-table th:nth-child(6),
+#isv-table td:nth-child(6) { width: 10%; white-space: nowrap; } /* ESTOQUE EMB9 */
+#isv-table th:nth-child(7),
+#isv-table td:nth-child(7) { width: 15%; white-space: nowrap; } /* DIAS S/VND */
+
+.table-wrapper table tbody tr:nth-child(even),
 #isv-table tbody tr:nth-child(even) {
     background-color: rgba(242, 239, 235, 0.3);
 }
 
+.table-wrapper table tbody tr:hover,
 #isv-table tbody tr:hover {
     background: linear-gradient(90deg, rgba(51, 166, 33, 0.08), rgba(217, 150, 26, 0.08));
     transform: scale(1.01);
@@ -682,6 +873,38 @@ function printFilteredData() {
         justify-content: center;
         width: 100%;
     }
+    
+    .isv-table-container {
+        padding: 8px;
+        overflow-x: auto;
+        margin: 0 -1rem;
+    }
+    
+    .table-wrapper table,
+    #isv-table {
+        font-size: 0.7rem;
+        min-width: 900px;
+    }
+    
+    .table-wrapper table thead th,
+    #isv-table thead th {
+        padding: 8px;
+    }
+
+    .table-wrapper table tbody td,
+    #isv-table tbody td {
+        padding: 4px;
+    }
+    
+    /* Ajustar larguras para mobile */
+    #isv-table th:nth-child(2),
+    #isv-table td:nth-child(2) { width: 25%; } /* DESCRICAO */
+    #isv-table th:nth-child(3),
+    #isv-table td:nth-child(3) { width: 12%; } /* EMBALAGEM */
+    #isv-table th:nth-child(4),
+    #isv-table td:nth-child(4) { width: 20%; } /* FORNECEDOR */
+    #isv-table th:nth-child(5),
+    #isv-table td:nth-child(5) { width: 10%; } /* ESTOQUE EMB1 */
     
     .btn {
         flex: 1;

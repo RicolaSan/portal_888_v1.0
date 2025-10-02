@@ -286,6 +286,7 @@
     align-items: center;
     justify-content: flex-end;
     flex: 1;
+    margin-left: auto;
 }
 
 /* Ações de filtro (Filtrar e Limpar) - Compacto */
@@ -357,19 +358,7 @@
     box-shadow: 0 0 0 3px rgba(51, 166, 33, 0.1);
 }
 
-/* CSS específico para o input dias_vencimento */
-#dias_vencimento {
-    max-width: 120px;
-    min-width: 90px;
-    flex: none;
-    text-align: center;
-    /* Garantir que o input seja funcional */
-    pointer-events: auto;
-    user-select: auto;
-    -webkit-user-select: auto;
-    -moz-user-select: auto;
-    -ms-user-select: auto;
-}
+/* CSS específico para o input dias_vencimento - removido duplicação */
 
 /* Garantir que o input number funcione corretamente */
 input[type="number"] {
@@ -516,6 +505,7 @@ input[type="number"]::-webkit-inner-spin-button {
     text-align: left;
     font-weight: 600;
     border: none;
+    border-right: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 2;
@@ -524,16 +514,27 @@ input[type="number"]::-webkit-inner-spin-button {
     text-overflow: ellipsis;
 }
 
+.table-wrapper table thead th:last-child,
+.styled-table thead th:last-child {
+    border-right: none;
+}
+
 .table-wrapper table tbody td,
 .styled-table tbody td {
     padding: 4px;
     border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     color: var(--dark-gray);
     vertical-align: middle;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 0;
+}
+
+.table-wrapper table tbody td:last-child,
+.styled-table tbody td:last-child {
+    border-right: none;
 }
 
 /* Larguras específicas para cada coluna */

@@ -102,15 +102,27 @@ def dataframe_to_html_table(df, empty_message="Nenhum dado disponível para exib
     else:
         return f"<p class='text-center text-muted'>{empty_message}</p>"
 
-def process_group_data(df, group_col='GRUPO', subgroup_col='SUB-GRUPO', value_col='VLR.TOTAL'):
-    """Processa dados agrupados por grupo e subgrupo"""
-    if not validate_columns(df, [group_col, subgroup_col, value_col]):
+def process_group_data(df, group_col='GRUPO', subgroup_col='SUB-GRUPO', value_col='VLR.TOTAL', event_col='EVENTO'):
+    """Processa dados agrupados por grupo e subgrupo com ordenação específica por evento"""
+    if not validate_columns(df, [group_col, subgroup_col, value_col, event_col]):
         return {}
     
-    grupos = df[group_col].unique()
+    # Determina a ordenação baseada no tipo de evento
+    if df[event_col].iloc[0] == 6004:
+        ascending_order = True  # Ordem crescente para evento 6004
+    elif df[event_col].iloc[0] == 6504:
+        ascending_order = False  # Ordem decrescente para evento 6504
+    else:
+        ascending_order = True  # Padrão
+    
+    # Calcula soma total por grupo para ordenação
+    grupos_soma = df.groupby(group_col)[value_col].sum().reset_index()
+    grupos_soma = grupos_soma.sort_values(by=value_col, ascending=ascending_order)
+    grupos_ordenados = grupos_soma[group_col].tolist()
+    
     box_data = {}
     
-    for grupo in grupos:
+    for grupo in grupos_ordenados:
         grupo_df = df[df[group_col] == grupo]
         
         # Soma total do grupo
@@ -119,6 +131,8 @@ def process_group_data(df, group_col='GRUPO', subgroup_col='SUB-GRUPO', value_co
         
         # Soma por subgrupo
         subgrupos = grupo_df.groupby(subgroup_col)[value_col].sum().reset_index()
+        # Ordena por valor - mantém decrescente para subgrupos ou ajusta conforme necessário
+        subgrupos = subgrupos.sort_values(by=value_col, ascending=False)
         subgrupos[value_col] = subgrupos[value_col].apply(format_currency)
         
         box_data[grupo] = {
@@ -146,7 +160,7 @@ def format_date_for_display(date_obj):
     return date_obj.strftime('%d/%m/%Y') if date_obj else "N/A"
 
 # =============== ROTAS ===============
-
+#rota da página inicial
 @controle_de_perdas.route('/')
 @controle_de_perdas.route('/controle_de_perdas')
 def index():
@@ -163,7 +177,7 @@ def index():
         data_mais_antiga=data_mais_antiga_fmt,
         data_mais_recente=data_mais_recente_fmt
     )
-
+#visualisar se  está atualisado.
 @controle_de_perdas.route('/menu')
 def menu():
     global saeoi51
@@ -200,36 +214,106 @@ def ajustepreventiva():
     # Formata os totais
     total_6004_formatado = format_currency(total_6004)
     total_6504_formatado = format_currency(total_6504)
+    
+    # Prepara dados para o template ajustepreventiva.html
+    # Combina dados dos eventos 6004 e 6504 para criar subgrupos
+    combined_df = pd.concat([evento_6004, evento_6504], ignore_index=True)
+    
+    # Cria dados simulados para subgrupos
+    subgrupos_data = []
+    if validate_columns(combined_df, ['SUB-GRUPO', 'VLR.TOTAL']):
+        subgrupos_unicos = combined_df['SUB-GRUPO'].unique()
+        
+        for i, subgrupo in enumerate(subgrupos_unicos[:10]):  # Limita a 10 subgrupos para exemplo
+            subgrupo_df = combined_df[combined_df['SUB-GRUPO'] == subgrupo]
+            valor_total = subgrupo_df['VLR.TOTAL'].sum()
+            total_itens = len(subgrupo_df)
+            
+            # Simula dados para o template
+            subgrupo_data = {
+                'codigo': str(subgrupo),
+                'nome': f'Subgrupo {subgrupo}',
+                'status': ['pendente', 'processando', 'concluido'][i % 3],
+                'status_text': ['Pendente', 'Processando', 'Concluído'][i % 3],
+                'prioridade': ['alta', 'media', 'baixa'][i % 3],
+                'prioridade_text': ['Alta', 'Média', 'Baixa'][i % 3],
+                'valor_total': format_currency(valor_total),
+                'total_itens': total_itens,
+                'pendencias': max(0, total_itens - (i * 2)),
+                'eficiencia': min(100, 60 + (i * 5)),
+                'progresso': min(100, 20 + (i * 8)),
+                'itens': [],  # Pode ser preenchido conforme necessário
+                'historico': [],  # Pode ser preenchido conforme necessário
+            }
+            subgrupos_data.append(subgrupo_data)
+    
+    # Calcula estatísticas gerais
+    total_subgrupos = len(subgrupos_data)
+    ajustes_pendentes = sum(1 for s in subgrupos_data if s['status'] == 'pendente')
+    ajustes_realizados = sum(1 for s in subgrupos_data if s['status'] == 'concluido')
+    economia_gerada = format_currency(total_6004 + total_6504)
+    
+    # Lista de subgrupos disponíveis para filtros
+    subgrupos_disponiveis = [{'codigo': s['codigo'], 'nome': s['nome']} for s in subgrupos_data]
 
     return render_template(
         'ajustepreventiva.html', 
         box_6004=box_6004, 
         box_6504=box_6504,
         total_6004=total_6004_formatado,
-        total_6504=total_6504_formatado
+        total_6504=total_6504_formatado,
+        subgrupos_data=subgrupos_data,
+        total_subgrupos=total_subgrupos,
+        ajustes_pendentes=ajustes_pendentes,
+        ajustes_realizados=ajustes_realizados,
+        economia_gerada=economia_gerada,
+        subgrupos_disponiveis=subgrupos_disponiveis
     )
 
-@controle_de_perdas.route('/ajustepreventiva/subgrupo/<subgrupo>')
+@controle_de_perdas.route('/ajustepreventiva_subgrupo/<subgrupo>')
 def ajustepreventiva_subgrupo(subgrupo):
     global saeoi51
     df = saeoi51
 
-    # Filtra os itens do subgrupo
-    if validate_columns(df, ['SUB-GRUPO']):
-        subgrupo_df = df[df['SUB-GRUPO'] == subgrupo]
-    else:
-        subgrupo_df = pd.DataFrame()
+    # Filtra apenas os eventos 6004 e 6504 primeiro
+    df_eventos = df[df['EVENTO'].isin([6004, 6504])]
+    
+    # Decodifica o subgrupo da URL (caso tenha caracteres especiais)
+    from urllib.parse import unquote
+    import base64
+    
+    subgrupo_decoded = unquote(subgrupo)
+    
+    # Tenta decodificar base64 se necessário
+    try:
+        # Verifica se parece com base64 (termina com = ou ==)
+        if subgrupo_decoded.endswith('=') or subgrupo_decoded.endswith('=='):
+            subgrupo_decoded = base64.b64decode(subgrupo_decoded).decode('utf-8')
+    except Exception:
+        # Se falhar na decodificação base64, usa o valor original
+        pass
 
+    # Tenta busca exata primeiro
+    subgrupo_df = df_eventos[df_eventos['SUB-GRUPO'] == subgrupo_decoded]
+    
+    # Se não encontrar, tenta busca case-insensitive
+    if subgrupo_df.empty:
+        subgrupo_df = df_eventos[df_eventos['SUB-GRUPO'].str.upper() == subgrupo_decoded.upper()]
+        
+    # Se ainda não encontrar, tenta busca parcial
+    if subgrupo_df.empty:
+        subgrupo_df = df_eventos[df_eventos['SUB-GRUPO'].str.contains(subgrupo_decoded, case=False, na=False)]
+    
     # Prepara dados para exibição
     subgrupo_df = prepare_dataframe_for_display(subgrupo_df)
     
     # Formata valores com 2 casas decimais (sem símbolo de moeda)
-    if 'VLR.TOTAL' in subgrupo_df.columns:
-        subgrupo_df['VLR.TOTAL'] = subgrupo_df['VLR.TOTAL'].apply(lambda x: f"{x:.2f}")
+    if not subgrupo_df.empty and 'VLR.TOTAL' in subgrupo_df.columns:
+        subgrupo_df = format_dataframe_currency(subgrupo_df, 'VLR.TOTAL')
 
     table_html = dataframe_to_html_table(subgrupo_df)
 
-    return render_template('ajustepreventiva_popup.html', table=table_html, subgrupo=subgrupo)
+    return render_template('ajustepreventiva_popup.html', table=table_html, subgrupo=subgrupo_decoded)
 
 @controle_de_perdas.route('/perdaporgrupo')
 def perdaporgrupo():
@@ -278,29 +362,45 @@ def negativo():
     global saeoi51
     df = saeoi51
 
-    # Filtra por evento 6521
-    df_filtrado = filter_by_evento(df, 6521)
+    # Filtra apenas os eventos 6001 e 6501 primeiro
+    df_eventos = df[df['EVENTO'].isin([6001, 6501])]
     
-    # Prepara para exibição
-    df_filtrado = prepare_dataframe_for_display(df_filtrado, ascending=False)
+    # Decodifica o subgrupo da URL (caso tenha caracteres especiais)
+    from urllib.parse import unquote
+    import base64
     
-    # Calcula totais ANTES da formatação
-    total_perdas, total_emb1 = calculate_totals(df_filtrado)
-    total_perdas_formatado = format_currency(total_perdas)
+    subgrupo_decoded = unquote(subgrupo)
+    
+    # Tenta decodificar base64 se necessário
+    try:
+        # Verifica se parece com base64 (termina com = ou ==)
+        if subgrupo_decoded.endswith('=') or subgrupo_decoded.endswith('=='):
+            subgrupo_decoded = base64.b64decode(subgrupo_decoded).decode('utf-8')
+    except Exception:
+        # Se falhar na decodificação base64, usa o valor original
+        pass
 
-    # Aplica formatação de moeda na coluna VLR.TOTAL do DataFrame
-    if 'VLR.TOTAL' in df_filtrado.columns and not df_filtrado.empty:
-        df_filtrado = df_filtrado.copy()
-        df_filtrado['VLR.TOTAL'] = df_filtrado['VLR.TOTAL'].apply(format_currency)
+    # Tenta busca exata primeiro
+    subgrupo_df = df_eventos[df_eventos['SUB-GRUPO'] == subgrupo_decoded]
+    
+    # Se não encontrar, tenta busca case-insensitive
+    if subgrupo_df.empty:
+        subgrupo_df = df_eventos[df_eventos['SUB-GRUPO'].str.upper() == subgrupo_decoded.upper()]
+        
+    # Se ainda não encontrar, tenta busca parcial
+    if subgrupo_df.empty:
+        subgrupo_df = df_eventos[df_eventos['SUB-GRUPO'].str.contains(subgrupo_decoded, case=False, na=False)]
+    
+    # Prepara dados para exibição
+    subgrupo_df = prepare_dataframe_for_display(subgrupo_df)
+    
+    # Formata valores com 2 casas decimais (sem símbolo de moeda)
+    if not subgrupo_df.empty and 'VLR.TOTAL' in subgrupo_df.columns:
+        subgrupo_df = format_dataframe_currency(subgrupo_df, 'VLR.TOTAL')
 
-    table_html = dataframe_to_html_table(df_filtrado)
+    table_html = dataframe_to_html_table(subgrupo_df)
 
-    return render_template(
-        'negativo.html',
-        table=table_html,
-        total_perdas=total_perdas_formatado,
-        total_emb1=total_emb1
-    )
+    return render_template('negativo.html', table=table_html, subgrupo=subgrupo_decoded)
 
 @controle_de_perdas.route("/perda_hf")
 def perda_hf():
@@ -376,14 +476,14 @@ def totalperdas():
 
     # Filtra os dados para cada box e ordena por "VLR.TOTAL" (do menor para o maior)
     box1_df = df[df['EVENTO'] == 1500][['EVENTO', 'MERCADORIA', 'DESCRICAO', 'VLR.TOTAL', 'EMB1']].sort_values(by='VLR.TOTAL', ascending=True)
-    box2_df = df[df['EVENTO'].isin([6004, 6001, 6504, 6021, 8000, 6501])][['EVENTO', 'MERCADORIA', 'DESCRICAO', 'VLR.TOTAL', 'EMB1']].sort_values(by='VLR.TOTAL', ascending=True)
+    box2_df = df[df['EVENTO'].isin([6004, 6001, 6504, 6021, 8000,])][['EVENTO', 'MERCADORIA', 'DESCRICAO', 'VLR.TOTAL', 'EMB1']].sort_values(by='VLR.TOTAL', ascending=True)
     
     # Filtra os dados para o Box 3 (data atual) e ordena
     data_atual = datetime.now().date()
     box3_df = df[(df['EVENTO'] == 1500) & (df['DT.ULT.EV.'].dt.date == data_atual)][['EVENTO', 'MERCADORIA', 'DESCRICAO', 'VLR.TOTAL', 'EMB1']].sort_values(by='VLR.TOTAL', ascending=True)
 
     # Filtra os dados para o Box 4 (data atual e eventos específicos) e ordena
-    box4_df = df[(df['EVENTO'].isin([6004, 6001, 6504, 6021, 8000, 6501])) & (df['DT.ULT.EV.'].dt.date == data_atual)][['EVENTO', 'MERCADORIA', 'DESCRICAO', 'VLR.TOTAL', 'EMB1']].sort_values(by='VLR.TOTAL', ascending=True)
+    box4_df = df[(df['EVENTO'].isin([6004, 6001, 6504, 6021, 8000,])) & (df['DT.ULT.EV.'].dt.date == data_atual)][['EVENTO', 'MERCADORIA', 'DESCRICAO', 'VLR.TOTAL', 'EMB1']].sort_values(by='VLR.TOTAL', ascending=True)
 
     # Arredonda os valores da coluna "VLR.TOTAL" para duas casas decimais
     box1_df['VLR.TOTAL'] = box1_df['VLR.TOTAL'].round(2)
@@ -409,7 +509,9 @@ def totalperdas():
     central_emb1_total = box3_emb1_total + box4_emb1_total
 
     perda_total = box1_vlr_total + box2_vlr_total
+    perda_total = perda_total.round(2)
     perda_total2 = box3_vlr_total + box4_vlr_total
+    perda_total2 = perda_total2.round(2)
 
     # Primeiro, calcula os valores originais (sem formatação)
     box1_vlr_total_raw = box1_df['VLR.TOTAL'].sum() if 'VLR.TOTAL' in box1_df.columns else 0
@@ -417,24 +519,13 @@ def totalperdas():
     box3_vlr_total_raw = box3_df['VLR.TOTAL'].sum() if 'VLR.TOTAL' in box3_df.columns else 0
     box4_vlr_total_raw = box4_df['VLR.TOTAL'].sum() if 'VLR.TOTAL' in box4_df.columns else 0
 
-    # Calcula a soma dos itens com evento 6501 para subtração
-    evento_6501_df = df[df['EVENTO'] == 6501]
-    evento_6501_total = evento_6501_df['VLR.TOTAL'].sum() if 'VLR.TOTAL' in evento_6501_df.columns and not evento_6501_df.empty else 0
-    
-    # Calcula a soma dos itens com evento 6501 na data atual para subtração
-    evento_6501_hoje_df = df[(df['EVENTO'] == 6501) & (df['DT.ULT.EV.'].dt.date == data_atual)]
-    evento_6501_hoje_total = evento_6501_hoje_df['VLR.TOTAL'].sum() if 'VLR.TOTAL' in evento_6501_hoje_df.columns and not evento_6501_hoje_df.empty else 0
-
+   
     # Formata os valores totais
     box1_vlr_total = format_currency(box1_vlr_total_raw)
     box2_vlr_total = format_currency(box2_vlr_total_raw)
     box3_vlr_total = format_currency(box3_vlr_total_raw)
     box4_vlr_total = format_currency(box4_vlr_total_raw)
 
-    # Calcula e formata as perdas totais SUBTRAINDO o evento 6501
-    perda_total = format_currency((box1_vlr_total_raw + box2_vlr_total_raw) - evento_6501_total)
-    perda_total2 = format_currency((box3_vlr_total_raw + box4_vlr_total_raw) - evento_6501_hoje_total)
-    
     # Formata VLR.TOTAL em todos os DataFrames
     for df in [box1_df, box2_df, box3_df, box4_df]:
         if not df.empty and 'VLR.TOTAL' in df.columns:
@@ -529,7 +620,7 @@ def perda_vencimento():
 def perdafrios():
     global saeoi51
     df = saeoi51
-
+    
     # Filtra os itens onde "DESCRICAO" começa com "RF"
     if 'DESCRICAO' in df.columns:
         df_filtrado = df[df['DESCRICAO'].str.startswith('RF', na=False)]
@@ -537,7 +628,7 @@ def perdafrios():
         df_filtrado = pd.DataFrame()
 
     # Box da esquerda: EVENTO em [6004, 6001, 6504, 6021, 6501, 8000]
-    eventos_esquerda = [6004, 6001, 6504, 6021, 6501, 8000]
+    eventos_esquerda = [6004, 6001, 6504, 6021, 8000]
     box_esquerda_df = df_filtrado[df_filtrado['EVENTO'].isin(eventos_esquerda)]
 
     # Box da direita: EVENTO = 1500
@@ -587,16 +678,31 @@ def perdafrios():
     box_direita_html = dataframe_to_html_table(box_direita_df)
     box_vencimento_html = dataframe_to_html_table(box_vencimento_df)
 
-    return render_template(
-        'perdafrios.html',
-        box_esquerda_html=box_esquerda_html,
-        box_direita_html=box_direita_html,
-        box_vencimento_html=box_vencimento_html,
-        total_esquerda=total_esquerda_formatado,
-        emb1_esquerda=emb1_esquerda,
-        total_direita=total_direita_formatado,
-        emb1_direita=emb1_direita,
-        total_vencimento=total_vencimento_formatado,
-        emb1_vencimento=emb1_vencimento,
-        total_geral=total_geral_formatado
-    )
+    # Calcular totais gerais para os cards de resumo
+    rf_vlr_total = total_geral_formatado
+    rf_emb1_total = emb1_esquerda + emb1_direita + emb1_vencimento
+    eventos_count = len(df_filtrado['EVENTO'].unique()) if not df_filtrado.empty else 0
+    avariadas_vlr_total = total_direita_formatado  # Box 2 é mercadorias avariadas
+    
+    return render_template('perdafrios.html',
+                         # Dados dos DataFrames para iteração no template
+                         box1=box_direita_df.to_dict('records') if not box_direita_df.empty else [],
+                         box2=box_esquerda_df.to_dict('records') if not box_esquerda_df.empty else [],
+                         box3=box_vencimento_df.to_dict('records') if not box_vencimento_df.empty else [],
+                         # Tabelas HTML
+                         box1_html=box_direita_html,
+                         box2_html=box_esquerda_html,
+                         box3_html=box_vencimento_html,
+                         # Valores totais dos boxes
+                         box1_vlr_total=total_direita_formatado,
+                         box2_vlr_total=total_esquerda_formatado,
+                         box3_vlr_total=total_vencimento_formatado,
+                         # EMB1 totais dos boxes
+                         box1_emb1_total=emb1_direita,
+                         box2_emb1_total=emb1_esquerda,
+                         box3_emb1_total=emb1_vencimento,
+                         # Totais gerais para os cards de resumo
+                         rf_vlr_total=rf_vlr_total,
+                         rf_emb1_total=rf_emb1_total,
+                         eventos_count=eventos_count,
+                         avariadas_vlr_total=avariadas_vlr_total)

@@ -1,0 +1,2095 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de Ruptura - Portal 888{% endblock %}
+
+{% block content %}
+<!-- CSS crítico inline para evitar FOUC -->
+<style>
+    .content-wrapper {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .content-wrapper.loaded {
+        opacity: 1;
+    }
+    .loading-spinner-main {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+        font-size: 1.2rem;
+        color: #666;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .loading-spinner-main.hidden {
+        display: none;
+    }
+    .spinner-icon-main {
+        font-size: 2rem;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<!-- Indicador de carregamento -->
+<div class="loading-spinner-main" id="loadingSpinnerMain">
+    <i class="fas fa-spinner spinner-icon-main"></i>
+    <span>Carregando dados de ruptura...</span>
+</div>
+<div class="content-wrapper" id="contentWrapper">
+<article class="ruptura-page" role="main" aria-labelledby="page-title">
+    <section class="ruptura-data" aria-label="Dados dos produtos em ruptura">
+        <div class="ruptura-table-container">
+            <header class="ruptura-header">
+                <h2 id="page-title">Controle de Ruptura</h2>
+                
+                <!-- Filtro por Grupo -->
+                <div class="filter-group" role="search" aria-label="Filtros de busca">
+                    <label for="grupo-select" class="filter-label">
+                        <i class="fas fa-filter"></i> Filtrar por Grupo:
+                    </label>
+                    <select id="grupo-select" 
+                            name="grupo" 
+                            class="form-select grupo-select"
+                            aria-label="Selecionar grupo para filtrar"
+                            onchange="filtrarPorGrupo(this.value)">
+                        <option value="todos" {{ 'selected' if not grupo_selecionado or grupo_selecionado == 'todos' else '' }}>
+                            Todos os Grupos
+                        </option>
+                        {% for grupo in grupos_disponiveis %}
+                            <option value="{{ grupo }}" {{ 'selected' if grupo_selecionado == grupo else '' }}>
+                                {{ grupo }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="ruptura-actions">
+                    <div class="export-actions">
+                        <button onclick="imprimirFiltrado()" 
+                                class="btn btn-secondary" 
+                                aria-label="Imprimir dados"
+                                title="Imprimir página atual">
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+
+            
+            <div class="table-wrapper" role="region" aria-label="Tabela de produtos em ruptura" tabindex="0">
+                {% if smg12_df is not none and smg12_df != '' %}
+                    {{ smg12_df|safe }}
+                {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                        <span>
+                            {% if grupo_selecionado and grupo_selecionado != 'todos' %}
+                                Nenhum dado de ruptura encontrado para o grupo "{{ grupo_selecionado }}".
+                            {% else %}
+                                Nenhum dado de ruptura encontrado.
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Paginação -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Navegação de páginas" class="pagination-nav">
+                <ul class="pagination" role="list">
+                    {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" 
+                               href="{{ url_for('controle_ruptura.index', page=page-1, grupo=grupo_selecionado) }}"
+                               aria-label="Ir para página anterior">
+                                <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page %}
+                            <li class="page-item active">
+                                <span class="page-link" aria-current="page" aria-label="Página atual, página {{ p }}">{{ p }}</span>
+                            </li>
+                        {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
+                            <li class="page-item">
+                                <a class="page-link" 
+                                   href="{{ url_for('controle_ruptura.index', page=p, grupo=grupo_selecionado) }}"
+                                   aria-label="Ir para página {{ p }}">{{ p }}</a>
+                            </li>
+                        {% elif p == 4 and page > 6 %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">...</span>
+                            </li>
+                        {% elif p == total_pages - 3 and page < total_pages - 5 %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" 
+                               href="{{ url_for('controle_ruptura.index', page=page+1, grupo=grupo_selecionado) }}"
+                               aria-label="Ir para próxima página">
+                                Próximo <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</article>
+</div>
+
+<style>
+/* Variáveis de cores baseadas na paleta cores.css */
+:root {
+    --primary-green: #33A621;
+    --accent-orange: #D9961A;
+    --light-beige: #F2EFEB;
+    --dark-brown: #BF4417;
+    --white: #ffffff;
+    --light-gray: #f8f9fa;
+    --medium-gray: #6c757d;
+    --dark-gray: #333333;
+    --border-color: #e0e0e0;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 15px rgba(0, 0, 0, 0.08);
+    --shadow-heavy: 0 4px 15px rgba(51, 166, 33, 0.2);
+    --transition-standard: all 0.3s ease;
+    --border-radius: 5px;
+}
+
+/* Prevenção de FOUC (Flash of Unstyled Content) */
+html {
+    visibility: hidden;
+    opacity: 0;
+}
+
+html.loaded {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Loading state para transições suaves */
+body.loading {
+    pointer-events: none;
+    overflow: hidden;
+}
+
+body.loading::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.loading::after {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-green);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 10000;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Transições suaves para elementos principais */
+.ruptura-table-container,
+.ruptura-header,
+.table-wrapper {
+    transition: opacity 0.2s ease-in-out;
+}
+
+body.loading .ruptura-table-container,
+body.loading .ruptura-header,
+body.loading .table-wrapper {
+    opacity: 0.7;
+}
+
+.ruptura-page {
+    padding: 0;
+    width: 100%;
+    margin: 0;
+    background: linear-gradient(135deg, var(--light-beige) 0%, rgba(255, 255, 255, 0.9) 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    z-index: 1;
+}
+
+.ruptura-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-heavy);
+    color: var(--white);
+    gap: 1rem;
+    position: relative;
+    flex-wrap: wrap;
+}
+
+.ruptura-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    border-radius: var(--border-radius);
+    pointer-events: none;
+}
+
+.ruptura-header h2 {
+    margin: 0;
+    color: var(--white);
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
+}
+
+.ruptura-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.export-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Filter Section Styles */
+.filter-section {
+    background: var(--white);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: var(--dark-gray);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.filter-label i {
+    color: var(--primary-green);
+}
+
+.form-select,
+.grupo-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--white);
+    color: var(--dark-gray);
+    font-size: 0.9rem;
+    min-width: 200px;
+    cursor: pointer;
+    transition: var(--transition-standard);
+}
+
+.form-select:focus,
+.grupo-select:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 2px rgba(51, 166, 33, 0.2);
+}
+
+/* Estilos específicos para filter-group dentro do ruptura-header */
+.ruptura-header .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    justify-content: flex-end;
+    position: relative;
+    z-index: 1;
+    margin-left: auto;
+}
+
+.ruptura-header .filter-label {
+    color: var(--white);
+    font-weight: 500;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.ruptura-header .filter-label i {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.ruptura-header .form-select,
+.ruptura-header .grupo-select {
+    min-width: 180px;
+    font-size: 0.85rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--dark-gray);
+}
+
+.form-select:hover,
+.grupo-select:hover {
+    border-color: var(--accent-orange);
+}
+
+.clear-filter {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--medium-gray);
+    background: var(--white);
+    color: var(--medium-gray);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: var(--transition-standard);
+}
+
+.clear-filter:hover {
+    background: var(--medium-gray);
+    color: var(--white);
+    border-color: var(--medium-gray);
+}
+
+.btn {
+    padding: 0.2rem 0.3rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: var(--transition-standard);
+    box-shadow: var(--shadow-light);
+    min-width: 60px;
+    max-width: 80px;
+    height: 28px;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-orange), #c8851a);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #c8851a, var(--accent-orange));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 150, 26, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--medium-gray), #5a6268);
+    color: var(--white);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268, var(--medium-gray));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border: 1px solid var(--medium-gray);
+    color: var(--medium-gray);
+    min-width: auto;
+    max-width: none;
+    height: auto;
+}
+
+.btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    height: auto;
+}
+
+
+
+.alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.ruptura-table-container {
+    background: var(--white);
+    padding: 18px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.table-wrapper:focus {
+    outline: 2px solid var(--primary-green);
+    outline-offset: 2px;
+}
+
+.table-wrapper table,
+.styled-table {
+    width: 100% !important;
+    border-collapse: collapse;
+    display: table !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    table-layout: fixed;
+    min-width: 900px;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Larguras específicas para colunas da tabela de ruptura */
+.table-wrapper table th:nth-child(1),
+.table-wrapper table td:nth-child(1),
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1) {
+    width: 6%; /* CODIGO */
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.table-wrapper table th:nth-child(2),
+.table-wrapper table td:nth-child(2),
+.styled-table th:nth-child(2),
+.styled-table td:nth-child(2) {
+    width: 250px; /* DESCRICAO */
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.table-wrapper table th:nth-child(3),
+.table-wrapper table td:nth-child(3),
+.styled-table th:nth-child(3),
+.styled-table td:nth-child(3) {
+    width: 90px; /* EMBALAGEM */
+    min-width: 80px;
+    max-width: 100px;
+}
+
+.table-wrapper table th:nth-child(4),
+.table-wrapper table td:nth-child(4),
+.styled-table th:nth-child(4),
+.styled-table td:nth-child(4) {
+    width: 110px; /* DT ULT ENTRADA */
+    min-width: 100px;
+    max-width: 120px;
+}
+
+.table-wrapper table th:nth-child(5),
+.table-wrapper table td:nth-child(5),
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5) {
+    width: 120px; /* DIAS SEM VENDA (RUPT.) */
+    min-width: 110px;
+    max-width: 130px;
+}
+
+.table-wrapper table th:nth-child(6),
+.table-wrapper table td:nth-child(6),
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6) {
+    width: 170px; /* ENTRADA EMB1 */
+    min-width: 90px;
+    max-width: 110px;
+}
+
+.table-wrapper table th:nth-child(7),
+.table-wrapper table td:nth-child(7),
+.styled-table th:nth-child(7),
+.styled-table td:nth-child(7) {
+    width: 90px; /* ESTOQ EMB1 */
+    min-width: 80px;
+    max-width: 100px;
+}
+
+.table-wrapper table th:nth-child(8),
+.table-wrapper table td:nth-child(8),
+.styled-table th:nth-child(8),
+.styled-table td:nth-child(8) {
+    width: 90px; /* ESTOQ EMB9 */
+    min-width: 80px;
+    max-width: 100px;
+}
+
+.table-wrapper table th:nth-child(9),
+.table-wrapper table td:nth-child(9),
+.styled-table th:nth-child(9),
+.styled-table td:nth-child(9) {
+    width: 80px; /* DT ULT VND */
+    min-width: 90px;
+    max-width: 110px;
+}
+
+.table-wrapper table th:nth-child(10),
+.table-wrapper table td:nth-child(10),
+.styled-table th:nth-child(10),
+.styled-table td:nth-child(10) {
+    width: 7%; /* IDADE */
+    min-width: 60px;
+    max-width: 80px;
+}
+
+.table-wrapper table th:nth-child(11),
+.table-wrapper table td:nth-child(11),
+.styled-table th:nth-child(11),
+.styled-table td:nth-child(11) {
+    width: 90px; /* DIAS S/VND */
+    min-width: 80px;
+    max-width: 100px;
+}
+
+/* Permitir quebra de linha apenas na coluna DESCRICAO */
+.table-wrapper table td:nth-child(2),
+.styled-table td:nth-child(2) {
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 1.3;
+    padding: 6px 8px;
+    max-width: none !important;
+}
+
+/* Centralizar colunas numéricas */
+.table-wrapper table td:nth-child(1),
+.table-wrapper table td:nth-child(3),
+.table-wrapper table td:nth-child(5),
+.table-wrapper table td:nth-child(6),
+.table-wrapper table td:nth-child(7),
+.table-wrapper table td:nth-child(8),
+.table-wrapper table td:nth-child(10),
+.table-wrapper table td:nth-child(11),
+.styled-table td:nth-child(1),
+.styled-table td:nth-child(3),
+.styled-table td:nth-child(5),
+.styled-table td:nth-child(6),
+.styled-table td:nth-child(7),
+.styled-table td:nth-child(8),
+.styled-table td:nth-child(10),
+.styled-table td:nth-child(11) {
+    text-align: center;
+}
+
+/* Centralizar colunas de data */
+.table-wrapper table td:nth-child(4),
+.table-wrapper table td:nth-child(9),
+.styled-table td:nth-child(4),
+.styled-table td:nth-child(9) {
+    text-align: center;
+    font-size: 12px;
+}
+
+/* Aplicar larguras também aos cabeçalhos */
+.table-wrapper table th:nth-child(1),
+.table-wrapper table th:nth-child(3),
+.table-wrapper table th:nth-child(5),
+.table-wrapper table th:nth-child(6),
+.table-wrapper table th:nth-child(7),
+.table-wrapper table th:nth-child(8),
+.table-wrapper table th:nth-child(10),
+.table-wrapper table th:nth-child(11),
+.styled-table th:nth-child(1),
+.styled-table th:nth-child(3),
+.styled-table th:nth-child(5),
+.styled-table th:nth-child(6),
+.styled-table th:nth-child(7),
+.styled-table th:nth-child(8),
+.styled-table th:nth-child(10),
+.styled-table th:nth-child(11) {
+    text-align: center;
+}
+
+.table-wrapper table thead th,
+.styled-table thead th {
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    color: var(--white);
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.table-wrapper table tbody td,
+.styled-table tbody td {
+    padding: 8px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--dark-gray);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
+}
+
+.table-wrapper table tbody tr:nth-child(even),
+.styled-table tbody tr:nth-child(even) {
+    background-color: rgba(242, 239, 235, 0.3);
+}
+
+.table-wrapper table tbody tr:hover,
+.styled-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(51, 166, 33, 0.08), rgba(217, 150, 26, 0.08));
+    transform: scale(1.005);
+    transition: var(--transition-standard);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos padronizados para tabelas */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #dee2e6;
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    color: white;
+    font-weight: bold;
+}
+
+.table tbody + tbody {
+    border-top: 2px solid #dee2e6;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.table-hover tbody tr:hover {
+    color: #212529;
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+.pagination-nav {
+    margin-top: 2rem;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.page-item {
+    display: inline-block;
+}
+
+.page-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    margin-left: -1px;
+    line-height: 1.25;
+    color: var(--dark-brown);
+    text-decoration: none;
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    transition: var(--transition-standard);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(51, 166, 33, 0.1), transparent);
+    transition: left 0.3s;
+}
+
+.page-link:hover::before {
+    left: 100%;
+}
+
+.page-link:hover {
+    z-index: 2;
+    color: var(--white);
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+    transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+    z-index: 3;
+    color: var(--white);
+    background-color: var(--accent-orange);
+    border-color: var(--accent-orange);
+    font-weight: bold;
+}
+
+.page-item.disabled .page-link {
+    color: var(--medium-gray);
+    pointer-events: none;
+    cursor: auto;
+    background-color: var(--light-gray);
+    border-color: var(--border-color);
+}
+
+/* Loading animation */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .ruptura-page {
+        padding: 1rem;
+    }
+    
+    .ruptura-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+        padding: 1rem;
+    }
+    
+    .ruptura-header h2 {
+        font-size: 1.5rem;
+        text-align: center;
+    }
+    
+    .export-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+        min-width: 80px;
+        max-width: 100px;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+        height: 32px;
+    }
+    
+    .ruptura-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        text-align: center;
+    }
+    
+    .ruptura-header .filter-group {
+        justify-content: flex-start;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        order: 2;
+        flex-wrap: wrap;
+    }
+    
+    .ruptura-header h2 {
+        order: 1;
+        font-size: 1.2rem;
+    }
+    
+    .ruptura-actions {
+        order: 3;
+        justify-content: center;
+    }
+    
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .form-select,
+    .grupo-select {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .ruptura-header .form-select,
+    .ruptura-header .grupo-select {
+        min-width: 150px;
+        max-width: 200px;
+        flex: 1;
+    }
+    
+    .info-content {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .ruptura-table-container {
+        padding: 8px;
+        overflow-x: auto;
+        margin: 0 -1rem;
+    }
+    
+    .table-wrapper table,
+    .styled-table {
+        font-size: 0.7rem;
+        min-width: 900px;
+    }
+    
+    .table-wrapper table thead th,
+    .styled-table thead th {
+        padding: 8px;
+    }
+
+    .table-wrapper table tbody td,
+    .styled-table tbody td {
+        padding: 4px;
+    }
+    
+    .pagination {
+        gap: 0.125rem;
+    }
+    
+    .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .ruptura-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .btn {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.7rem;
+        min-width: 60px;
+        max-width: 80px;
+        height: 30px;
+    }
+    
+    .page-link {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    /* Ocultar elementos desnecessários na impressão */
+    .ruptura-header,
+    .pagination-nav,
+    .export-actions,
+    .filter-section,
+    .loading-spinner-main,
+    .btn,
+    .filter-group {
+        display: none !important;
+    }
+    
+    /* Garantir que o conteúdo principal seja visível */
+    .content-wrapper,
+    .ruptura-page,
+    .ruptura-table-container,
+    .table-wrapper,
+    table,
+    .styled-table {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Estilos específicos para tabelas */
+    table,
+    .styled-table {
+        display: table !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 10px !important;
+        min-width: auto !important;
+        page-break-inside: auto !important;
+    }
+    
+    /* Cabeçalhos da tabela */
+    table thead th,
+    .styled-table thead th {
+        background: #333 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 8px 4px !important;
+        border: 1px solid #000 !important;
+        font-weight: bold !important;
+    }
+    
+    /* Células da tabela */
+    table tbody td,
+    .styled-table tbody td {
+        padding: 6px 4px !important;
+        border: 1px solid #ccc !important;
+        font-size: 9px !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Linhas alternadas */
+    table tbody tr:nth-child(even),
+    .styled-table tbody tr:nth-child(even) {
+        background-color: #f9f9f9 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* Layout da página */
+    .ruptura-page {
+        background: white !important;
+        padding: 10px !important;
+        margin: 0 !important;
+    }
+    
+    .ruptura-table-container {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Título para impressão */
+    .ruptura-page::before {
+        content: "Relatório de Controle de Ruptura";
+        display: block !important;
+        font-size: 16px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin-bottom: 20px !important;
+        padding-bottom: 10px !important;
+        border-bottom: 2px solid #333 !important;
+    }
+}
+</style>
+
+<script>
+// FOUC prevention - Control content visibility
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const loadingSpinner = document.getElementById('loadingSpinnerMain');
+        const contentWrapper = document.getElementById('contentWrapper');
+        
+        if (loadingSpinner) {
+            loadingSpinner.style.display = 'none';
+        }
+        if (contentWrapper) {
+            contentWrapper.classList.add('loaded');
+        }
+    }, 100);
+});
+
+// Fallback for window load
+window.addEventListener('load', function() {
+    const loadingSpinner = document.getElementById('loadingSpinnerMain');
+    const contentWrapper = document.getElementById('contentWrapper');
+    
+    if (loadingSpinner) {
+        loadingSpinner.style.display = 'none';
+    }
+    if (contentWrapper) {
+        contentWrapper.classList.add('loaded');
+    }
+});
+
+function filtrarPorGrupo(grupo) {
+    const currentUrl = new URL(window.location);
+    
+    if (grupo === 'todos') {
+        currentUrl.searchParams.delete('grupo');
+    } else {
+        currentUrl.searchParams.set('grupo', grupo);
+    }
+    
+    // Reset to page 1 when filtering
+    currentUrl.searchParams.set('page', '1');
+    
+    // Add loading state with smooth transition
+    document.body.classList.add('loading');
+    
+    // Adiciona transição suave aos elementos principais
+    const mainElements = document.querySelectorAll('.ruptura-table-container, .ruptura-header, .table-wrapper');
+    mainElements.forEach(element => {
+        if (element) {
+            element.style.transition = 'opacity 0.2s ease-in-out';
+            element.style.opacity = '0.7';
+        }
+    });
+    
+    // Pequeno delay para permitir que a transição seja visível
+    setTimeout(() => {
+        // Navigate to new URL
+        window.location.href = currentUrl.toString();
+    }, 150);
+}
+
+function limparFiltro() {
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.delete('grupo');
+    currentUrl.searchParams.set('page', '1');
+    
+    document.body.classList.add('loading');
+    window.location.href = currentUrl.toString();
+}
+
+function imprimirFiltrado() {
+    try {
+        // Capturar o grupo selecionado atual
+        const grupoSelecionado = "{{ grupo_selecionado }}";
+        
+        // Construir a URL para impressão completa
+        let printUrl = "{{ url_for('controle_ruptura.imprimir') }}";
+        
+        // Adicionar parâmetro do grupo se não for 'todos'
+        if (grupoSelecionado && grupoSelecionado !== 'todos') {
+            printUrl += '?grupo=' + encodeURIComponent(grupoSelecionado);
+        }
+        
+        // Abrir página de impressão em nova aba
+        const printWindow = window.open(printUrl, '_blank');
+        
+        if (!printWindow) {
+            alert('Por favor, permita pop-ups para este site para usar a função de impressão.');
+        }
+        
+    } catch (error) {
+        console.error('Erro ao imprimir:', error);
+        alert('Erro ao tentar imprimir. Verifique as configurações do seu navegador.');
+    }
+}
+
+function exportarExcel() {
+    const grupoSelecionado = document.getElementById('grupo-select').value;
+    const exportUrl = "{{ url_for('controle_ruptura.export_excel') if url_for else '#' }}";
+    
+    if (exportUrl !== '#') {
+        let finalUrl = exportUrl;
+        if (grupoSelecionado && grupoSelecionado !== 'todos') {
+            finalUrl += '?grupo=' + encodeURIComponent(grupoSelecionado);
+        }
+        window.location.href = finalUrl;
+    } else {
+        alert('Função de exportação não disponível');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('page-loaded');
+    
+    // Highlight selected group in the select
+    const grupoSelect = document.getElementById('grupo-select');
+    if (grupoSelect) {
+        grupoSelect.addEventListener('change', function() {
+            this.style.borderColor = 'var(--primary-green)';
+            setTimeout(() => {
+                this.style.borderColor = 'var(--border-color)';
+            }, 1000);
+        });
+    }
+    
+    // Add tooltips for buttons
+    const buttons = document.querySelectorAll('.btn[title]');
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px) scale(1.05)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // Improve table accessibility
+    const table = document.querySelector('.table-wrapper table');
+    if (table) {
+        table.setAttribute('role', 'table');
+        table.setAttribute('aria-label', 'Dados de controle de ruptura');
+        
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            header.setAttribute('scope', 'col');
+            header.setAttribute('aria-sort', 'none');
+        });
+        
+        table.setAttribute('tabindex', '0');
+        table.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const firstPageLink = document.querySelector('.pagination .page-link');
+                if (firstPageLink) firstPageLink.focus();
+            }
+        });
+    }
+    
+    // Add loading state for pagination links
+    const pageLinks = document.querySelectorAll('.pagination .page-link');
+    pageLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (!this.closest('.page-item').classList.contains('disabled')) {
+                document.body.classList.add('loading');
+            }
+        });
+    });
+    
+    // Show current filter status
+    const grupoSelecionado = "{{ grupo_selecionado }}";
+    if (grupoSelecionado && grupoSelecionado !== 'todos') {
+        console.log('Filtro ativo para grupo:', grupoSelecionado);
+    }
+});
+
+window.addEventListener('beforeprint', function() {
+    console.log('Preparando para impressão...');
+});
+
+window.addEventListener('afterprint', function() {
+    console.log('Impressão concluída');
+    document.body.classList.remove('loading');
+});
+
+// Inicialização para prevenir FOUC e melhorar transições
+document.addEventListener('DOMContentLoaded', function() {
+    // Remove loading state se existir
+    document.body.classList.remove('loading');
+    
+    // Marca HTML como carregado para prevenir FOUC
+    document.documentElement.classList.add('loaded');
+    
+    // Otimização do select de grupo
+    const grupoSelect = document.getElementById('grupo-select');
+    if (grupoSelect) {
+        // Adiciona transição suave ao select
+        grupoSelect.style.transition = 'all 0.2s ease';
+        
+        // Melhora a responsividade do select
+        grupoSelect.addEventListener('change', function() {
+            // Adiciona feedback visual imediato
+            this.style.opacity = '0.7';
+            setTimeout(() => {
+                filtrarPorGrupo(this.value);
+            }, 100);
+        });
+    }
+});
+
+// Garante que o loading state seja removido quando a página carregar completamente
+window.addEventListener('load', function() {
+    document.body.classList.remove('loading');
+    document.documentElement.classList.add('loaded');
+});
+
+// Remove loading state se a página for carregada via back/forward
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        document.body.classList.remove('loading');
+        document.documentElement.classList.add('loaded');
+    }
+});
+</script>
+{% endblock %}
+
+.form-select:hover,
+.grupo-select:hover {
+    border-color: var(--accent-orange);
+}
+
+.clear-filter,
+.stats-toggle {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--medium-gray);
+    background: var(--white);
+    color: var(--medium-gray);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: var(--transition-standard);
+}
+
+.clear-filter:hover {
+    background: var(--medium-gray);
+    color: var(--white);
+    border-color: var(--medium-gray);
+}
+
+.stats-toggle:hover {
+    background: var(--info-color);
+    color: var(--white);
+    border-color: var(--info-color);
+}
+
+/* Stats Panel Styles */
+.stats-panel {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+}
+
+.stats-header {
+    background: linear-gradient(135deg, var(--info-color), #138496);
+    color: var(--white);
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stats-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stats-content {
+    padding: 1rem;
+}
+
+.loading-stats {
+    text-align: center;
+    color: var(--medium-gray);
+    padding: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: var(--light-gray);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-green);
+}
+
+.stat-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--dark-gray);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-green);
+    margin: 0.25rem 0;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--medium-gray);
+    margin: 0;
+}
+
+.btn {
+    padding: 0.2rem 0.3rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: var(--transition-standard);
+    box-shadow: var(--shadow-light);
+    min-width: 60px;
+    max-width: 85px;
+    height: 28px;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-orange), #c8851a);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #c8851a, var(--accent-orange));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 150, 26, 0.3);
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border: 1px solid var(--accent-orange);
+    color: var(--accent-orange);
+}
+
+.btn-outline-primary:hover {
+    background: var(--accent-orange);
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--medium-gray), #5a6268);
+    color: var(--white);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268, var(--medium-gray));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border: 1px solid var(--medium-gray);
+    color: var(--medium-gray);
+    min-width: auto;
+    max-width: none;
+    height: auto;
+}
+
+.btn-outline-info {
+    background: transparent;
+    border: 1px solid var(--info-color);
+    color: var(--info-color);
+}
+
+.btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    height: auto;
+}
+
+.column-note {
+    background: rgba(108, 117, 125, 0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    color: var(--medium-gray);
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.ruptura-table-container {
+    background: var(--white);
+    padding: 18px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.table-wrapper:focus {
+    outline: 2px solid var(--primary-green);
+    outline-offset: 2px;
+}
+
+.table-wrapper table,
+.styled-table {
+    width: 100% !important;
+    border-collapse: collapse;
+    display: table !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    table-layout: fixed;
+    min-width: 900px;
+    font-size: 13px;
+    margin: 0;
+}
+
+.table-wrapper table thead th,
+.styled-table thead th {
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    color: var(--white);
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.table-wrapper table tbody td,
+.styled-table tbody td {
+    padding: 8px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--dark-gray);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
+}
+
+.table-wrapper table tbody tr:nth-child(even),
+.styled-table tbody tr:nth-child(even) {
+    background-color: rgba(242, 239, 235, 0.3);
+}
+
+.table-wrapper table tbody tr:hover,
+.styled-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(51, 166, 33, 0.08), rgba(217, 150, 26, 0.08));
+    transform: scale(1.005);
+    transition: var(--transition-standard);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos padronizados para tabelas */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #dee2e6;
+    background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
+    color: white;
+    font-weight: bold;
+}
+
+.table tbody + tbody {
+    border-top: 2px solid #dee2e6;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.table-hover tbody tr:hover {
+    color: #212529;
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+.pagination-nav {
+    margin-top: 2rem;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.page-item {
+    display: inline-block;
+}
+
+.page-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    margin-left: -1px;
+    line-height: 1.25;
+    color: var(--dark-brown);
+    text-decoration: none;
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    transition: var(--transition-standard);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(51, 166, 33, 0.1), transparent);
+    transition: left 0.3s;
+}
+
+.page-link:hover::before {
+    left: 100%;
+}
+
+.page-link:hover {
+    z-index: 2;
+    color: var(--white);
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+    transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+    z-index: 3;
+    color: var(--white);
+    background-color: var(--accent-orange);
+    border-color: var(--accent-orange);
+    font-weight: bold;
+}
+
+.page-item.disabled .page-link {
+    color: var(--medium-gray);
+    pointer-events: none;
+    cursor: auto;
+    background-color: var(--light-gray);
+    border-color: var(--border-color);
+}
+
+/* Loading animation */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .ruptura-page {
+        padding: 1rem;
+    }
+    
+    .ruptura-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+        padding: 1rem;
+    }
+    
+    .ruptura-header h2 {
+        font-size: 1.5rem;
+        text-align: center;
+    }
+    
+    .export-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+        min-width: 70px;
+        max-width: 90px;
+        padding: 0.25rem 0.3rem;
+        font-size: 0.65rem;
+        height: 30px;
+    }
+    
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .form-select,
+    .grupo-select {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .info-content {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .column-note {
+        margin-left: 0;
+        margin-top: 0.25rem;
+        align-self: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .ruptura-table-container {
+        padding: 8px;
+        overflow-x: auto;
+        margin: 0 -1rem;
+    }
+    
+    .table-wrapper table,
+    .styled-table {
+        font-size: 0.7rem;
+        min-width: 900px;
+    }
+    
+    .table-wrapper table thead th,
+    .styled-table thead th {
+        padding: 8px;
+    }
+
+    .table-wrapper table tbody td,
+    .styled-table tbody td {
+        padding: 4px;
+    }
+    
+    .pagination {
+        gap: 0.125rem;
+    }
+    
+    .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .ruptura-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .btn {
+        padding: 0.2rem 0.3rem;
+        font-size: 0.6rem;
+        min-width: 55px;
+        max-width: 75px;
+        height: 28px;
+    }
+    
+    .page-link {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+    }
+}
+
+/* Estilos duplicados removidos - mantendo apenas os estilos de impressão principais acima */
+</style>
+
+<script>
+function filtrarPorGrupo(grupo) {
+    const currentUrl = new URL(window.location);
+    
+    if (grupo === 'todos') {
+        currentUrl.searchParams.delete('grupo');
+    } else {
+        currentUrl.searchParams.set('grupo', grupo);
+    }
+    
+    // Reset to page 1 when filtering
+    currentUrl.searchParams.set('page', '1');
+    
+    // Add loading state
+    document.body.classList.add('loading');
+    
+    // Navigate to new URL
+    window.location.href = currentUrl.toString();
+}
+
+function limparFiltro() {
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.delete('grupo');
+    currentUrl.searchParams.set('page', '1');
+    
+    document.body.classList.add('loading');
+    window.location.href = currentUrl.toString();
+}
+
+// Função imprimirFiltrado() removida - usando a versão melhorada acima
+
+function exportarExcel(includeGrupo = false) {
+    const grupoSelecionado = document.getElementById('grupo-select').value;
+    const exportUrl = "{{ url_for('controle_ruptura.export_excel') if url_for else '#' }}";
+    
+    if (exportUrl !== '#') {
+        let finalUrl = exportUrl + '?';
+        const params = [];
+        
+        if (grupoSelecionado && grupoSelecionado !== 'todos') {
+            params.push('grupo=' + encodeURIComponent(grupoSelecionado));
+        }
+        
+        if (includeGrupo) {
+            params.push('include_grupo=true');
+        }
+        
+        finalUrl += params.join('&');
+        
+        // Show loading state
+        document.body.classList.add('loading');
+        
+        // Create a temporary link to trigger download
+        const link = document.createElement('a');
+        link.href = finalUrl;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Remove loading state after a short delay
+        setTimeout(() => {
+            document.body.classList.remove('loading');
+        }, 1000);
+    } else {
+        alert('Função de exportação não disponível');
+    }
+}
+
+function toggleGroupStats() {
+    const panel = document.getElementById('group-stats-panel');
+    const isVisible = panel.style.display !== 'none';
+    
+    if (isVisible) {
+        panel.style.display = 'none';
+    } else {
+        panel.style.display = 'block';
+        loadGroupStats();
+    }
+}
+
+function loadGroupStats() {
+    const statsContent = document.getElementById('stats-content');
+    
+    // Show loading
+    statsContent.innerHTML = `
+        <div class="loading-stats">
+            <i class="fas fa-spinner fa-spin"></i> Carregando estatísticas...
+        </div>
+    `;
+    
+    // Fetch stats from API
+    fetch("{{ url_for('controle_ruptura.api_group_stats') if url_for else '/api/group-stats' }}")
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayGroupStats(data.stats);
+            } else {
+                statsContent.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Erro ao carregar estatísticas: ${data.error || 'Erro desconhecido'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar estatísticas:', error);
+            statsContent.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Erro ao carregar estatísticas. Verifique sua conexão.
+                </div>
+            `;
+        });
+}
+
+function displayGroupStats(stats) {
+    const statsContent = document.getElementById('stats-content');
+    
+    if (Object.keys(stats).length === 0) {
+        statsContent.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Nenhuma estatística disponível.
+            </div>
+        `;
+        return;
+    }
+    
+    let statsHtml = '<div class="stats-grid">';
+    
+    Object.entries(stats).forEach(([grupo, data]) => {
+        statsHtml += `
+            <div class="stat-card">
+                <h4>${grupo}</h4>
+                <div class="stat-value">${data.total_items}</div>
+                <div class="stat-label">Total de Itens</div>
+                <div class="stat-value">${data.avg_rupture_days}</div>
+                <div class="stat-label">Média Dias Ruptura</div>
+                <div class="stat-value">${data.total_stock_emb1.toLocaleString()}</div>
+                <div class="stat-label">Estoque EMB1</div>
+                <div class="stat-value">${data.total_stock_emb9.toLocaleString()}</div>
+                <div class="stat-label">Estoque EMB9</div>
+            </div>
+        `;
+    });
+    
+    statsHtml += '</div>';
+    statsContent.innerHTML = statsHtml;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('page-loaded');
+    
+    // Highlight selected group in the select
+    const grupoSelect = document.getElementById('grupo-select');
+    if (grupoSelect) {
+        grupoSelect.addEventListener('change', function() {
+            this.style.borderColor = 'var(--primary-green)';
+            setTimeout(() => {
+                this.style.borderColor = 'var(--border-color)';
+            }, 1000);
+        });
+    }
+    
+    // Add tooltips for buttons
+    const buttons = document.querySelectorAll('.btn[title]');
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px) scale(1.05)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // Improve table accessibility
+    const table = document.querySelector('.table-wrapper table');
+    if (table) {
+        table.setAttribute('role', 'table');
+        table.setAttribute('aria-label', 'Dados de controle de ruptura (coluna GRUPO oculta)');
+        
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            header.setAttribute('scope', 'col');
+            header.setAttribute('aria-sort', 'none');
+        });
+        
+        table.setAttribute('tabindex', '0');
+        table.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const firstPageLink = document.querySelector('.pagination .page-link');
+                if (firstPageLink) firstPageLink.focus();
+            }
+        });
+    }
+    
+    // Add loading state for pagination links
+    const pageLinks = document.querySelectorAll('.pagination .page-link');
+    pageLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (!this.closest('.page-item').classList.contains('disabled')) {
+                document.body.classList.add('loading');
+            }
+        });
+    });
+    
+    // Show current filter status
+    const grupoSelecionado = "{{ grupo_selecionado }}";
+    if (grupoSelecionado && grupoSelecionado !== 'todos') {
+        console.log('Filtro ativo para grupo:', grupoSelecionado, '(coluna GRUPO oculta)');
+    }
+});
+
+window.addEventListener('beforeprint', function() {
+    console.log('Preparando para impressão...');
+});
+
+window.addEventListener('afterprint', function() {
+    console.log('Impressão concluída');
+    document.body.classList.remove('loading');
+});
+</script>
