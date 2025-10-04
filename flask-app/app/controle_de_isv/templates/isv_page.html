@@ -3,49 +3,12 @@
 {% block title %}Controle de ISV - Portal 888{% endblock %}
 
 {% block content %}
-<!-- CSS crítico inline para evitar FOUC -->
-<style>
-    .content-wrapper {
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
-    }
-    .content-wrapper.loaded {
-        opacity: 1;
-    }
-    .loading-spinner-main {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 300px;
-        font-size: 1.2rem;
-        color: #666;
-        flex-direction: column;
-        gap: 15px;
-    }
-    .loading-spinner-main.hidden {
-        display: none;
-    }
-    .spinner-icon-main {
-        font-size: 2rem;
-        animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-</style>
-
-<!-- Indicador de carregamento -->
-<div class="loading-spinner-main" id="loadingSpinnerMain">
-    <i class="fas fa-spinner spinner-icon-main"></i>
-    <span>Carregando dados ISV...</span>
-</div>
 <div class="content-wrapper" id="contentWrapper">
     <article class="isv-page" role="main" aria-labelledby="page-title">
         {% if isv_data.error %}
         <section class="error-section" role="alert" aria-live="assertive">
             <div class="error-message" style="color: red; text-align: center; padding: 50px; background: #ffe6e6; border: 1px solid #ff9999; border-radius: 5px; margin: 20px 0;">
-                ❌ Erro ao carregar dados: {{ isv_data.error }}
+                Erro ao carregar dados: {{ isv_data.error }}
             </div>
         </section>
         {% else %}
@@ -113,33 +76,6 @@
 </div>
 
 <script>
-// FOUC prevention - Control content visibility
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        const loadingSpinner = document.getElementById('loadingSpinnerMain');
-        const contentWrapper = document.getElementById('contentWrapper');
-        
-        if (loadingSpinner) {
-            loadingSpinner.style.display = 'none';
-        }
-        if (contentWrapper) {
-            contentWrapper.classList.add('loaded');
-        }
-    }, 100);
-});
-
-// Fallback for window load
-window.addEventListener('load', function() {
-    const loadingSpinner = document.getElementById('loadingSpinnerMain');
-    const contentWrapper = document.getElementById('contentWrapper');
-    
-    if (loadingSpinner) {
-        loadingSpinner.style.display = 'none';
-    }
-    if (contentWrapper) {
-        contentWrapper.classList.add('loaded');
-    }
-});
 
 // JavaScript específico para a página ISV
 $(document).ready(function() {

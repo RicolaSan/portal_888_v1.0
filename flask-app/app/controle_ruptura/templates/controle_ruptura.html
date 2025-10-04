@@ -540,195 +540,98 @@ body.loading .table-wrapper {
     table-layout: fixed;
     min-width: 900px;
     font-size: 13px;
-    margin: 0;
-}
-
-/* Larguras específicas para colunas da tabela de ruptura */
-.table-wrapper table th:nth-child(1),
-.table-wrapper table td:nth-child(1),
-.styled-table th:nth-child(1),
-.styled-table td:nth-child(1) {
-    width: 6%; /* CODIGO */
-    min-width: 80px;
-    max-width: 80px;
-}
-
-.table-wrapper table th:nth-child(2),
-.table-wrapper table td:nth-child(2),
-.styled-table th:nth-child(2),
-.styled-table td:nth-child(2) {
-    width: 250px; /* DESCRICAO */
-    min-width: 200px;
-    max-width: 300px;
-}
-
-.table-wrapper table th:nth-child(3),
-.table-wrapper table td:nth-child(3),
-.styled-table th:nth-child(3),
-.styled-table td:nth-child(3) {
-    width: 90px; /* EMBALAGEM */
-    min-width: 80px;
-    max-width: 100px;
-}
-
-.table-wrapper table th:nth-child(4),
-.table-wrapper table td:nth-child(4),
-.styled-table th:nth-child(4),
-.styled-table td:nth-child(4) {
-    width: 110px; /* DT ULT ENTRADA */
-    min-width: 100px;
-    max-width: 120px;
-}
-
-.table-wrapper table th:nth-child(5),
-.table-wrapper table td:nth-child(5),
-.styled-table th:nth-child(5),
-.styled-table td:nth-child(5) {
-    width: 120px; /* DIAS SEM VENDA (RUPT.) */
-    min-width: 110px;
-    max-width: 130px;
-}
-
-.table-wrapper table th:nth-child(6),
-.table-wrapper table td:nth-child(6),
-.styled-table th:nth-child(6),
-.styled-table td:nth-child(6) {
-    width: 170px; /* ENTRADA EMB1 */
-    min-width: 90px;
-    max-width: 110px;
-}
-
-.table-wrapper table th:nth-child(7),
-.table-wrapper table td:nth-child(7),
-.styled-table th:nth-child(7),
-.styled-table td:nth-child(7) {
-    width: 90px; /* ESTOQ EMB1 */
-    min-width: 80px;
-    max-width: 100px;
-}
-
-.table-wrapper table th:nth-child(8),
-.table-wrapper table td:nth-child(8),
-.styled-table th:nth-child(8),
-.styled-table td:nth-child(8) {
-    width: 90px; /* ESTOQ EMB9 */
-    min-width: 80px;
-    max-width: 100px;
-}
-
-.table-wrapper table th:nth-child(9),
-.table-wrapper table td:nth-child(9),
-.styled-table th:nth-child(9),
-.styled-table td:nth-child(9) {
-    width: 80px; /* DT ULT VND */
-    min-width: 90px;
-    max-width: 110px;
-}
-
-.table-wrapper table th:nth-child(10),
-.table-wrapper table td:nth-child(10),
-.styled-table th:nth-child(10),
-.styled-table td:nth-child(10) {
-    width: 7%; /* IDADE */
-    min-width: 60px;
-    max-width: 80px;
-}
-
-.table-wrapper table th:nth-child(11),
-.table-wrapper table td:nth-child(11),
-.styled-table th:nth-child(11),
-.styled-table td:nth-child(11) {
-    width: 90px; /* DIAS S/VND */
-    min-width: 80px;
-    max-width: 100px;
-}
-
-/* Permitir quebra de linha apenas na coluna DESCRICAO */
-.table-wrapper table td:nth-child(2),
-.styled-table td:nth-child(2) {
-    white-space: normal !important;
-    word-wrap: break-word;
-    line-height: 1.3;
-    padding: 6px 8px;
-    max-width: none !important;
-}
-
-/* Centralizar colunas numéricas */
-.table-wrapper table td:nth-child(1),
-.table-wrapper table td:nth-child(3),
-.table-wrapper table td:nth-child(5),
-.table-wrapper table td:nth-child(6),
-.table-wrapper table td:nth-child(7),
-.table-wrapper table td:nth-child(8),
-.table-wrapper table td:nth-child(10),
-.table-wrapper table td:nth-child(11),
-.styled-table td:nth-child(1),
-.styled-table td:nth-child(3),
-.styled-table td:nth-child(5),
-.styled-table td:nth-child(6),
-.styled-table td:nth-child(7),
-.styled-table td:nth-child(8),
-.styled-table td:nth-child(10),
-.styled-table td:nth-child(11) {
-    text-align: center;
-}
-
-/* Centralizar colunas de data */
-.table-wrapper table td:nth-child(4),
-.table-wrapper table td:nth-child(9),
-.styled-table td:nth-child(4),
-.styled-table td:nth-child(9) {
-    text-align: center;
-    font-size: 12px;
-}
-
-/* Aplicar larguras também aos cabeçalhos */
-.table-wrapper table th:nth-child(1),
-.table-wrapper table th:nth-child(3),
-.table-wrapper table th:nth-child(5),
-.table-wrapper table th:nth-child(6),
-.table-wrapper table th:nth-child(7),
-.table-wrapper table th:nth-child(8),
-.table-wrapper table th:nth-child(10),
-.table-wrapper table th:nth-child(11),
-.styled-table th:nth-child(1),
-.styled-table th:nth-child(3),
-.styled-table th:nth-child(5),
-.styled-table th:nth-child(6),
-.styled-table th:nth-child(7),
-.styled-table th:nth-child(8),
-.styled-table th:nth-child(10),
-.styled-table th:nth-child(11) {
-    text-align: center;
 }
 
 .table-wrapper table thead th,
 .styled-table thead th {
     background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
     color: var(--white);
-    padding: 12px 8px;
+    padding: 8px;
     text-align: left;
     font-weight: 600;
     border: none;
+    border-right: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.table-wrapper table thead th:last-child,
+.styled-table thead th:last-child {
+    border-right: none;
 }
 
 .table-wrapper table tbody td,
 .styled-table tbody td {
-    padding: 8px;
+    padding: 4px;
     border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     color: var(--dark-gray);
     vertical-align: middle;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 0;
+}
+
+.table-wrapper table tbody td:last-child,
+.styled-table tbody td:last-child {
+    border-right: none;
+}
+
+/* Larguras específicas para colunas da tabela de ruptura */
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1) { width: 6%; white-space: nowrap; } /* CODIGO */
+.styled-table th:nth-child(2),
+.styled-table td:nth-child(2) { width: 20%; white-space: normal; overflow: hidden; text-overflow: ellipsis; word-wrap: break-word; line-height: 1.3; } /* DESCRICAO */
+.styled-table th:nth-child(3),
+.styled-table td:nth-child(3) { width: 8%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* EMBALAGEM */
+.styled-table th:nth-child(4),
+.styled-table td:nth-child(4) { width: 10%; white-space: nowrap; } /* DT ULT ENTRADA */
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5) { width: 12%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* DIAS SEM VENDA (RUPT.) */
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6) { width: 10%; white-space: nowrap; } /* ENTRADA EMB1 */
+.styled-table th:nth-child(7),
+.styled-table td:nth-child(7) { width: 8%; white-space: nowrap; } /* ESTOQ EMB1 */
+.styled-table th:nth-child(8),
+.styled-table td:nth-child(8) { width: 8%; white-space: nowrap; } /* ESTOQ EMB9 */
+.styled-table th:nth-child(9),
+.styled-table td:nth-child(9) { width: 10%; white-space: nowrap; } /* DT ULT VND */
+.styled-table th:nth-child(10),
+.styled-table td:nth-child(10) { width: 6%; white-space: nowrap; } /* IDADE */
+.styled-table th:nth-child(11),
+.styled-table td:nth-child(11) { width: 8%; white-space: nowrap; } /* DIAS S/VND */
+
+/* Centralizar colunas numéricas */
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1),
+.styled-table th:nth-child(3),
+.styled-table td:nth-child(3),
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5),
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6),
+.styled-table th:nth-child(7),
+.styled-table td:nth-child(7),
+.styled-table th:nth-child(8),
+.styled-table td:nth-child(8),
+.styled-table th:nth-child(10),
+.styled-table td:nth-child(10),
+.styled-table th:nth-child(11),
+.styled-table td:nth-child(11) {
+    text-align: center;
+}
+
+/* Centralizar colunas de data */
+.styled-table th:nth-child(4),
+.styled-table td:nth-child(4),
+.styled-table th:nth-child(9),
+.styled-table td:nth-child(9) {
+    text-align: center;
 }
 
 .table-wrapper table tbody tr:nth-child(even),
@@ -739,9 +642,8 @@ body.loading .table-wrapper {
 .table-wrapper table tbody tr:hover,
 .styled-table tbody tr:hover {
     background: linear-gradient(90deg, rgba(51, 166, 33, 0.08), rgba(217, 150, 26, 0.08));
-    transform: scale(1.005);
-    transition: var(--transition-standard);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: scale(1.01);
+    transition: all 0.2s ease;
 }
 
 /* Estilos padronizados para tabelas */
@@ -971,6 +873,16 @@ body.loading .table-wrapper {
         padding: 4px;
     }
     
+    /* Ajustar larguras para mobile - mantendo funcionalidade */
+    .styled-table th:nth-child(2),
+    .styled-table td:nth-child(2) { width: 20%; } /* DESCRICAO */
+    .styled-table th:nth-child(3),
+    .styled-table td:nth-child(3) { width: 8%; } /* EMBALAGEM */
+    .styled-table th:nth-child(4),
+    .styled-table td:nth-child(4) { width: 10%; } /* DT ULT ENTRADA */
+    .styled-table th:nth-child(5),
+    .styled-table td:nth-child(5) { width: 12%; } /* DIAS SEM VENDA (RUPT.) */
+    
     .pagination {
         gap: 0.125rem;
     }
@@ -992,6 +904,11 @@ body.loading .table-wrapper {
         min-width: 60px;
         max-width: 80px;
         height: 30px;
+    }
+    
+    .table-wrapper table,
+    .styled-table {
+        font-size: 0.65rem;
     }
     
     .page-link {

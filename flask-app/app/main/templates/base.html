@@ -105,26 +105,26 @@
                     <li class="nav-item dropdown" role="none">
                         <a href="#" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de Perdas</a>
                         <ul class="dropdown-menu" role="menu">
-                            <li><a href="/controle-perdas/totalperdas">📊 Perdas Total</a></li>
-                            <li><a href="/controle-perdas/perda_hf">🥬 Perdas Hortifruti</a></li>
-                            <li><a href="/controle-perdas/perdafrios">🧊 Perdas Frios</a></li>
-                            <li><a href="/controle-perdas/perda_vencimento">⏰ Perdas Por Vencimento</a></li>
-                            <li><a href="/controle-perdas/perdaporgrupo">🏪 Perdas Por Grupo</a></li>
-                            <li><a href="/controle-perdas/negativo">🔧 Ajuste Automático Negativo</a></li>
-                            <li><a href="/controle-perdas/ajustepreventiva">📋 Ajuste Contagem Preventiva</a></li>
+                            <li><a href="/controle-perdas/totalperdas">Perdas Total</a></li>
+                            <li><a href="/controle-perdas/perda_hf">Perdas Hortifruti</a></li>
+                            <li><a href="/controle-perdas/perdafrios">Perdas Frios</a></li>
+                            <li><a href="/controle-perdas/perda_vencimento">Perdas Por Vencimento</a></li>
+                            <li><a href="/controle-perdas/perdaporgrupo">Perdas Por Grupo</a></li>
+                            <li><a href="/controle-perdas/negativo">Ajuste Automático Negativo</a></li>
+                            <li><a href="/controle-perdas/ajustepreventiva">Ajuste Contagem Preventiva</a></li>
                         </ul>
                     </li>
 
-                    <li class="nav-item dropdown" role="none">
-                        <a href="/controle-isv/page" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de ISV</a>
+                    <li class="nav-item" role="none">
+                        <a href="/controle-isv/page" class="nav-link" role="menuitem">Controle de ISV</a>
                     </li>
 
-                    <li class="nav-item dropdown" role="none">
-                        <a href="/controle-vencimento/" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de Vencimento</a>
+                    <li class="nav-item" role="none">
+                        <a href="/controle-vencimento/" class="nav-link" role="menuitem">Controle de Vencimento</a>
                     </li>
 
-                    <li class="nav-item dropdown" role="none">
-                        <a href="/controle-ruptura/" class="nav-link" role="menuitem" aria-haspopup="true" aria-expanded="false">Controle de Ruptura</a>                        
+                    <li class="nav-item" role="none">
+                        <a href="/controle-ruptura/" class="nav-link" role="menuitem">Controle de Ruptura</a>                        
                     </li>
                 </ul>
             </nav>
@@ -264,7 +264,7 @@
                 }
                 
                 // Mostrar loading
-                isvSection.innerHTML = '<div class="loading-spinner" style="text-align: center; padding: 50px;">🔄 Carregando dados ISV...</div>';
+                isvSection.innerHTML = '<div class="loading-spinner" style="text-align: center; padding: 50px;">Carregando dados ISV...</div>';
                 
                 // Mostrar seção ISV e ocultar outras
                 isvSection.style.display = 'block';
@@ -324,7 +324,7 @@
                 })
                 .catch(error => {
                     console.error('Erro ao carregar template ISV:', error);
-                    isvSection.innerHTML = '<div class="error-message" style="color: red; text-align: center; padding: 50px;">❌ Erro ao carregar página ISV: ' + error.message + '</div>';
+                    isvSection.innerHTML = '<div class="error-message" style="color: red; text-align: center; padding: 50px;">Erro ao carregar página ISV: ' + error.message + '</div>';
                 });
             } catch (error) {
                 console.error('Erro geral na função loadISVContent:', error);

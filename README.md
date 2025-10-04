@@ -2,7 +2,7 @@
 
 Portal web desenvolvido em Flask para gestão e controle de processos empresariais.
 
-## 📋 Sobre o Projeto
+## Sobre o Projeto
 
 Este é um sistema web desenvolvido em Flask que integra diferentes módulos de controle:
 
@@ -10,7 +10,7 @@ Este é um sistema web desenvolvido em Flask que integra diferentes módulos de 
 - **Controle de Perdas**: Monitoramento e análise de perdas
 - **Controle de ISV**: Gestão de ISV (Imposto Sobre Vendas)
 
-## 🚀 Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - **Python 3.x**
 - **Flask 2.2.2** - Framework web
@@ -21,7 +21,7 @@ Este é um sistema web desenvolvido em Flask que integra diferentes módulos de 
 - **Flask-Login 0.6.2** - Autenticação de usuários
 - **Flask-WTF 1.0.0** - Formulários web
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 portal_888_v1.0/
@@ -39,7 +39,7 @@ portal_888_v1.0/
 └── README.md
 ```
 
-## 🔧 Instalação e Configuração
+## Instalação e Configuração
 
 ### Pré-requisitos
 
@@ -79,13 +79,13 @@ portal_888_v1.0/
    python run.py
    ```
 
-## 🌐 Acesso
+## Acesso
 
 Após executar a aplicação, ela estará disponível em:
 - **URL**: `http://10.122.244.64:5099`
 - **Modo**: Debug habilitado
 
-## 📚 Módulos do Sistema
+## Módulos do Sistema
 
 ### Controle de Vencimento
 - Gestão de produtos próximos ao vencimento
@@ -102,7 +102,7 @@ Após executar a aplicação, ela estará disponível em:
 - Gestão de Imposto Sobre Vendas
 - Processamento e controle fiscal
 
-## 🤝 Contribuição
+## Contribuição
 
 1. Faça um fork do projeto
 2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
@@ -110,11 +110,11 @@ Após executar a aplicação, ela estará disponível em:
 4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
 
-## 📄 Licença
+## Licença
 
 Este projeto está sob licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
-## ✨ Autor
+## Autor
 
 Desenvolvido para o Portal 888 v1.0
 

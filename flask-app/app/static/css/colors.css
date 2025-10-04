@@ -1,0 +1,149 @@
+/* ========================================
+   SISTEMA DE CORES PADRONIZADO - PORTAL 888
+   ======================================== */
+
+:root {
+  /* ===== CORES PRINCIPAIS DO SISTEMA ===== */
+  --primary-green: #33a621;        /* Verde principal - baseado no cores.css */
+  --primary-green-dark: #2a8f1a;   /* Verde escuro para gradientes */
+  --primary-green-light: #4db82f;  /* Verde claro para hover */
+  
+  --accent-orange: #d9961a;        /* Laranja de destaque - baseado no cores.css */
+  --accent-orange-dark: #c8881a;   /* Laranja escuro para gradientes */
+  --accent-orange-light: #e6a429;  /* Laranja claro para hover */
+  
+  --light-beige: #f2efeb;          /* Bege claro - baseado no cores.css */
+  --dark-brown: #bf4417;           /* Marrom escuro - baseado no cores.css */
+
+  /* ===== CORES NEUTRAS ===== */
+  --white: #ffffff;
+  --light-gray: #f8f9fa;
+  --medium-gray: #6c757d;
+  --dark-gray: #333333;
+  --border-color: #e0e0e0;
+  --text-muted: #6c757d;
+
+  /* ===== CORES DE ESTADO ===== */
+  --success-green: #28a745;        /* Verde de sucesso */
+  --success-green-dark: #1e7e34;   /* Verde de sucesso escuro */
+  
+  --warning-orange: #ffc107;       /* Amarelo de aviso */
+  --warning-orange-dark: #e0a800;  /* Amarelo de aviso escuro */
+  
+  --danger-red: #dc3545;           /* Vermelho de perigo */
+  --danger-red-dark: #c82333;      /* Vermelho de perigo escuro */
+  
+  --info-blue: #17a2b8;            /* Azul de informação */
+  --info-blue-dark: #138496;       /* Azul de informação escuro */
+
+  /* ===== CORES DE FUNDO ===== */
+  --bg-light: #f8f9fa;             /* Fundo claro */
+  --bg-secondary: #e9ecef;         /* Fundo secundário */
+  --bg-dark: #343a40;              /* Fundo escuro */
+  --bg-white: #ffffff;             /* Fundo branco */
+
+  /* ===== CORES DE BORDA ===== */
+  --border-light: #dee2e6;
+  --border-medium: #ced4da;
+  --border-dark: #adb5bd;
+
+  /* ===== SOMBRAS ===== */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.15);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.2);
+  
+  /* ===== SOMBRAS COLORIDAS ===== */
+  --shadow-green: 0 2px 8px rgba(51, 166, 33, 0.2);
+  --shadow-orange: 0 2px 8px rgba(217, 150, 26, 0.2);
+  --shadow-blue: 0 2px 8px rgba(23, 162, 184, 0.2);
+}
+
+/* ===== CLASSES UTILITÁRIAS DE COR ===== */
+
+/* Cores de texto */
+.text-primary { color: var(--primary-green) !important; }
+.text-accent { color: var(--accent-orange) !important; }
+.text-success { color: var(--success-green) !important; }
+.text-warning { color: var(--warning-orange) !important; }
+.text-danger { color: var(--danger-red) !important; }
+.text-info { color: var(--info-blue) !important; }
+.text-muted { color: var(--text-muted) !important; }
+.text-dark { color: var(--dark-gray) !important; }
+.text-white { color: var(--white) !important; }
+
+/* Cores de fundo */
+.bg-primary { background-color: var(--primary-green) !important; }
+.bg-accent { background-color: var(--accent-orange) !important; }
+.bg-success { background-color: var(--success-green) !important; }
+.bg-warning { background-color: var(--warning-orange) !important; }
+.bg-danger { background-color: var(--danger-red) !important; }
+.bg-info { background-color: var(--info-blue) !important; }
+.bg-light { background-color: var(--bg-light) !important; }
+.bg-secondary { background-color: var(--bg-secondary) !important; }
+.bg-dark { background-color: var(--bg-dark) !important; }
+.bg-white { background-color: var(--bg-white) !important; }
+
+/* Gradientes padronizados */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark)) !important;
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, var(--accent-orange), var(--accent-orange-dark)) !important;
+}
+
+.gradient-info {
+  background: linear-gradient(135deg, var(--info-blue), var(--info-blue-dark)) !important;
+}
+
+.gradient-light {
+  background: linear-gradient(135deg, var(--bg-light), var(--bg-secondary)) !important;
+}
+
+/* Bordas padronizadas */
+.border-primary { border-color: var(--primary-green) !important; }
+.border-accent { border-color: var(--accent-orange) !important; }
+.border-light { border-color: var(--border-light) !important; }
+.border-medium { border-color: var(--border-medium) !important; }
+
+/* Sombras padronizadas */
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+.shadow-md { box-shadow: var(--shadow-md) !important; }
+.shadow-lg { box-shadow: var(--shadow-lg) !important; }
+.shadow-green { box-shadow: var(--shadow-green) !important; }
+.shadow-orange { box-shadow: var(--shadow-orange) !important; }
+.shadow-blue { box-shadow: var(--shadow-blue) !important; }
+
+/* ===== MODO ESCURO (FUTURO) ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-light: #2c3e50;
+    --bg-secondary: #34495e;
+    --bg-white: #2c3e50;
+    --text-muted: #bdc3c7;
+    --dark-gray: #ecf0f1;
+    --border-color: #34495e;
+  }
+}
+
+/* ===== DOCUMENTAÇÃO ===== */
+/*
+COMO USAR ESTE SISTEMA DE CORES:
+
+1. SEMPRE use as variáveis CSS em vez de cores hardcoded
+2. Para gradientes, use as classes .gradient-* ou crie com as variáveis
+3. Para sombras coloridas, use as variáveis --shadow-*
+4. Para texto e fundos, use as classes utilitárias quando possível
+
+EXEMPLOS:
+- background: var(--primary-green);
+- color: var(--text-muted);
+- box-shadow: var(--shadow-green);
+- background: linear-gradient(135deg, var(--primary-green), var(--primary-green-dark));
+
+CORES BASEADAS NO ARQUIVO cores.css:
+- #33A621 (Verde principal)
+- #D9961A (Laranja de destaque)  
+- #F2EFEB (Bege claro)
+- #BF4417 (Marrom escuro)
+*/

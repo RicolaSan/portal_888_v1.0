@@ -9,7 +9,7 @@
             <header class="ajustepreventiva-header">
                 <div class="header-content">
                     <div class="header-title">
-                        <h2 id="page-title">📋 Ajuste Contagem Preventiva</h2>
+                        <h2 id="page-title">Ajuste Contagem Preventiva</h2>
                     </div>
                     
                     <div class="summary-container">
@@ -156,9 +156,9 @@
 }
 
 .ajustepreventiva-header {
-    margin: 0 0 2px;
+    margin: 0 0 1px;
     margin-top: 0 !important;
-    padding: 0.5rem;
+    padding: 0.3rem;
     background: linear-gradient(135deg, var(--primary-green), #2a8f1a);
     border-radius: 5px;
     box-shadow: 0 4px 15px rgba(51, 166, 33, 0.2);
@@ -169,7 +169,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
 }
 
 .header-title {
@@ -187,15 +187,15 @@
 .ajustepreventiva-page {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 4px 12px 12px 12px;
+    padding: 2px 8px 8px 8px;
     position: relative;
     z-index: 100;
-    padding-top: 4px !important;
+    padding-top: 2px !important;
 }
 
 .summary-container {
     display: flex;
-    gap: 12px;
+    gap: 6px;
     flex-wrap: wrap;
     justify-content: flex-end;
     margin-bottom: 0;
@@ -203,8 +203,8 @@
 
 .summary-card {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 4px 8px;
+    border-radius: 6px;
+    padding: 2px 6px;
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -239,16 +239,16 @@
 .boxes-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-    gap: 8px;
-    margin-top: 6px;
+    gap: 4px;
+    margin-top: 3px;
 }
 
 .perdas-box {
     background: white;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    max-height: 75vh;
+    max-height: 78vh;
 }
 
 .box1 {
@@ -261,13 +261,13 @@
 
 .box-header {
     background: #f8f9fa;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-bottom: 1px solid #dee2e6;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 6px;
 }
 
 .box-header h3 {
@@ -298,7 +298,7 @@
 }
 
 .table-container {
-    max-height: calc(75vh - 80px);
+    max-height: calc(78vh - 60px);
     overflow-y: auto;
     margin: 0;
     padding: 0;
@@ -316,7 +316,7 @@
 
 .grupo-header {
     background: #f8f9fa;
-    padding: 12px 16px;
+    padding: 8px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -384,7 +384,7 @@
 .subgrupos-table th {
     background: #f8f9fa;
     color: #2c3e50;
-    padding: 8px 12px;
+    padding: 6px 8px;
     text-align: left;
     border-bottom: 2px solid #dee2e6;
     font-weight: 600;
@@ -397,9 +397,10 @@
 }
 
 .subgrupos-table td {
-    padding: 6px 12px;
+    padding: 6px 8px;
     border-bottom: 1px solid #dee2e6;
     vertical-align: middle;
+    font-size: 0.85rem;
 }
 
 .subgrupos-table td.valor {

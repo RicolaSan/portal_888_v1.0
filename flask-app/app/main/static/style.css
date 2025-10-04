@@ -25,6 +25,8 @@ body {
   background: linear-gradient(135deg, var(--cream-white) 0%, #ffffff 50%, var(--light-beige) 100%);
   min-height: 100vh;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .container {
@@ -195,6 +197,7 @@ header .container {
 main {
   padding: 30px 0;
   position: relative;
+  flex: 1;
 }
 
 .welcome-section {
@@ -593,9 +596,10 @@ main {
 footer {
   background: linear-gradient(135deg, var(--dark-brown), #a03d15);
   color: var(--cream-white);
-  margin-top: 4rem;
-  padding: 3rem 0 1rem;
+  margin-top: auto;
+  padding: 2rem 0 1rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 footer p {
